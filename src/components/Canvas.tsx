@@ -68,6 +68,8 @@ class Box {
 
   public render = () => {
     const { pos, size, color } = this;
+
+    this.ctx.clearRect(0, 0, 500, 700);
     this.ctx.fillStyle = color;
     this.ctx.fillRect(pos.x, pos.y, size.width, size.height);
   };
@@ -95,6 +97,8 @@ class Canvas extends React.Component<{}, IState> {
 
     this.element = new Box(this.ctx!);
     this.element.x = 200;
+    this.element.width = 125;
+    this.element.height = 50;
     this.element.render();
 
     this.canvas.onmousedown = (e) => {
@@ -125,6 +129,15 @@ class Canvas extends React.Component<{}, IState> {
       if (dragging === 'element') {
         const posX = mousePos(this.canvas, e).x;
         const posY = mousePos(this.canvas, e).y;
+
+        // TODO: Why doesn't this work?
+        // TODO: Consider adding more logic to mousePos func
+        // const xAdjustment = posX - this.element!.pos.x;
+        // const yAdjustment = posY - this.element!.pos.y;
+
+        // this.element!.x = posX + xAdjustment;
+        // this.element!.y = posY + yAdjustment;
+
         this.element!.x = posX;
         this.element!.y = posY;
       }
