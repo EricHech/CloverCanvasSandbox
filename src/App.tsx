@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import Canvas from './components/Canvas';
+import Container from './Container';
 import './App.css';
 
 class App extends Component {
@@ -7,9 +7,7 @@ class App extends Component {
     return (
       <div className="App">
         <header className="App-header">Testing Tables</header>
-        <div className="App-body">
-          <Canvas />
-        </div>
+        <Container />
       </div>
     );
   }

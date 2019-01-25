@@ -14,12 +14,19 @@
   font-size: calc(10px + 2vmin);
   color: white;
   border-bottom: 2px solid white;
+  margin-bottom: 3px;
 }
 
 .App-body {
-  display: flex;
-  flex-direction: column;
+  /* display: flex;
+  flex-direction: column; */
   background-color: #282c34;
   color: white;
-  flex: 1;
+  padding-bottom: 3px;
+  /* flex: 1; */
+}
+
+canvas {
+  outline: 5px dotted darkgrey;
+  max-width: 1000px;
 }
