@@ -30,3 +30,18 @@ canvas {
   outline: 5px dotted darkgrey;
   max-width: 1000px;
 }
+
+.custom-canvas {
+  width: 500px;
+  height: 500px;
+  position: relative;
+  border: 1px solid white;
+}
+
+.element {
+  width: 100px;
+  height: 100px;
+  position: absolute;
+  border: 1px solid white;
+  user-select: none;
+}
