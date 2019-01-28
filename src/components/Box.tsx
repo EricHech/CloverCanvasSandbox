@@ -2,50 +2,70 @@ import React from 'react';
 
 type TState = {
   id: string | null,
-  x: number | null,
-  y: number | null
 }
 
 // TODO: Type props/state
 class Box extends React.Component<any, TState> {
+  private element = React.createRef<HTMLDivElement>();
+  private x: number = 0;
+  private y: number = 0;
+  private finalX: number = 0;
+  private finalY: number = 0;
+  private initialX: number = 0;
+  private initialY: number = 0;
+
   state = {
     id: null,
-    x: null,
-    y: null,
   }
 
   mouseDown = (e: any) => {
-    const { target } = e;
+    e.preventDefault();
+    const { target, clientX, clientY } = e;
 
-    const x: string = target.style.left.slice(0, target.style.left.length - 2);
-    const y: string = target.style.top.slice(0, target.style.left.length - 2);
-    this.setState({ id: target.id, x: Number(x), y: Number(y) })
+    this.initialX = clientX;
+    this.initialY = clientY;
+
+    document.onmousemove = this.mouseMove;
+    document.onmouseup = this.mouseUp;
+    this.setState({ id: target.id });
   }
 
   mouseMove = (e: any) => {
-    const { movementX, movementY } = e;
-    // !: Start Here
-    console.log(this.state.y, e.clientY);
-    this.setState((prev) => ({ x: prev.x! + (movementX / 2), y: prev.y! + (movementY / 2) }));
+    e.preventDefault();
+    const { clientX, clientY } = e;
+
+    this.finalX = this.initialX - clientX;
+    this.finalY = this.initialY - clientY;
+    this.initialX = clientX;
+    this.initialY = clientY;
+    this.x = (this.element.current!.offsetLeft - this.finalX);
+    this.y = (this.element.current!.offsetTop - this.finalY);
+
+    this.element.current!.style.left = this.x + "px";
+    this.element.current!.style.top = this.y + "px";
   }
 
   mouseUp = (e: any) => {
-    this.setState({ id: null, x: null, y: null })
-    // target.onmousemove = null;
+    document.onmouseup = null;
+    document.onmousemove = null;
+    this.props.reorder(this.state.id);
+    this.setState({ id: null });
   }
 
   render() {
-    const { name, idx, highestIdx, color } = this.props;
-    const { id, x, y } = this.state;
+    const { name, idx, color } = this.props.box;
+    const { highestIdx } = this.props;
+    const { id } = this.state;
     const dragging = id === name;
 
     return <div
+      ref={this.element}
       id={name}
       onMouseDown={this.mouseDown}
-      onMouseMove={dragging ? this.mouseMove : undefined}
-      onMouseUp={dragging ? this.mouseUp : undefined}
       className='element'
-      style={{ "left": `${dragging ? x : x}px`, "top": `${dragging ? y : y}px`, zIndex: dragging ? highestIdx : idx, background: color }}>{name}</div>;
+      style={{ zIndex: dragging ? highestIdx : idx, background: color }}>
+      {name}
+    </div>;
   }
 }
 
