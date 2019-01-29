@@ -142,7 +142,10 @@ class Box {
     const handlePointZeroX = this.pos.x + this.size.width - (HANDLE_SIZE / 2);
     const handlePointZeroY = this.pos.y + this.size.height - (HANDLE_SIZE / 2);
 
-    if (x > handlePointZeroX && x < handlePointZeroX + HANDLE_SIZE && y > handlePointZeroY && y < handlePointZeroY + HANDLE_SIZE) {
+    if (x > handlePointZeroX
+     && x < handlePointZeroX + HANDLE_SIZE
+     && y > handlePointZeroY
+     && y < handlePointZeroY + HANDLE_SIZE) {
       return true;
     }
     return false;

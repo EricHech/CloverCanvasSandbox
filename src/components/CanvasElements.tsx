@@ -23,7 +23,7 @@ class CanvasElements extends React.Component<TProps, TState> {
   reorder = (id: string) => {
     // reorder the tables to ensure the one being dragged is on top of the stack
     const newArr: {}[] = [];
-    let found: {} = {};
+    let found: {} | null = null;
     this.setState(({characters}) => {
       for(let i = 0; i < characters.length; i++) {
         if(characters[i].name === id) found = characters[i]
@@ -33,8 +33,8 @@ class CanvasElements extends React.Component<TProps, TState> {
 
       return {
       characters: newArr,
-    }
-  })
+      }
+    })
   }
 
   render() {
@@ -42,13 +42,16 @@ class CanvasElements extends React.Component<TProps, TState> {
       each.idx = i;
       each.color = colors[i];
       return each;
-    })
+    });
 
     return (
       <div className="App-body">
         Here is some text.
-        {/* <div className='custom-canvas'>{this.props.characters.map((each: any, i: number, arr: []) => (<Box key={each.name} name={each.name} idx={i} highestIdx={arr.length} color={colors[i]} />))}</div> */}
-        <div className='custom-canvas'>{toDisplay.map((each: any, i: number, arr: any[]) => (<Box key={each.name} box={each} highestIdx={arr.length} reorder={this.reorder} />))}</div>
+        <div className='custom-canvas'>
+          {toDisplay.map((each: any, i: number, arr: any[]) => (
+            <Box key={each.name} box={each} highestIdx={arr.length} reorder={this.reorder} />
+          ))}
+        </div>
       </div>
     );
   }
