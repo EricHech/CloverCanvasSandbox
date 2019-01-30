@@ -42,13 +42,14 @@ class CanvasElements extends React.Component<TProps, TState> {
       each.idx = i;
       each.color = colors[i];
       return each;
-    });
+    })[0];
 
+    const test = [toDisplay]
     return (
       <div className="App-body">
         Here is some text.
         <div className='custom-canvas'>
-          {toDisplay.map((each: any, i: number, arr: any[]) => (
+          {test.map((each: any, i: number, arr: any[]) => (
             <Box key={each.name} box={each} highestIdx={arr.length} reorder={this.reorder} />
           ))}
         </div>
