@@ -1,8 +1,8 @@
 import React, { Component } from 'react';
 import axios from 'axios';
 
-import Canvas from './components/Canvas';
-import CanvasElements from './components/CanvasElements';
+import Canvas from './components/canvas/Canvas';
+import CanvasElements from './components/dom/CanvasElements';
 
 const API = 'https://swapi.co/api/people/';
 

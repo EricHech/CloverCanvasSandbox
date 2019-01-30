@@ -18,6 +18,7 @@ class Box extends React.Component<any, TState> {
   private initialY: number = 0;
   private height: number = 100;
   private width: number = 100;
+  private shouldRotate: boolean = false;
 
   state = {
     id: null,
@@ -49,6 +50,8 @@ class Box extends React.Component<any, TState> {
 
     this.element.current!.style.left = this.x + "px";
     this.element.current!.style.top = this.y + "px";
+
+    this.shouldRotate = false;
   }
 
   mouseUp = (e: any) => {
@@ -57,6 +60,10 @@ class Box extends React.Component<any, TState> {
     document.onmousemove = null;
     this.props.reorder(this.state.id);
     this.setState({ id: null });
+
+    if (this.shouldRotate) {
+      this.rotate();
+    }
   }
 
   startResize = (e: any) => {
@@ -88,15 +95,20 @@ class Box extends React.Component<any, TState> {
 
     this.element.current!.style.width = (clientX - elementPos.left) + "px";
     this.element.current!.style.height = (clientY - elementPos.top) + "px";
+
+    this.shouldRotate = false;
   }
 
-  rotate = (e: any) => {
-    e.preventDefault();
-    e.stopPropagation();
-
+  rotate = () => {
     this.setState((prev) => ({
       rotation: (prev.rotation + 1) % rotations.length,
     }));
+  }
+
+  setRotate = (e: any) => {
+    e.preventDefault();
+    e.stopPropagation();
+    this.shouldRotate = true;
   }
 
   render() {
@@ -112,7 +124,8 @@ class Box extends React.Component<any, TState> {
         onMouseDown={this.mouseDown}
         className='element'
         style={{ zIndex: dragging ? highestIdx : idx }}>
-        <div className="table" onClick={this.rotate} style={{ background: color, transform: `rotate(${rotations[rotation]})`}}>
+        <div className="table" onClick={this.setRotate} 
+             style={{ background: color, transform: `rotate(${rotations[rotation]})`}}>
           {name}
         </div>
         <div onMouseDown={this.startResize} className="handle" />
