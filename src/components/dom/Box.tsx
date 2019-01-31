@@ -2,7 +2,6 @@ import React from 'react';
 
 type TState = {
   id: string | null,
-  // rotationIdx: number,
 }
 
 const rotations = ['0deg', '45deg', '90deg', '135deg', '180deg', '225deg', '270deg', '315deg'];
@@ -80,7 +79,6 @@ class Box extends React.Component<any, TState> {
   mouseDown = (e: any) => {
     e.preventDefault();
     e.stopPropagation();
-    console.log('mousedown', this.shouldRotate);
 
     const { clientX, clientY } = e;
 
@@ -131,10 +129,7 @@ class Box extends React.Component<any, TState> {
     document.onmousemove = null;
     this.dragging = false;
 
-    console.log('this.shouldRotate', this.shouldRotate)
-
     if (this.shouldRotate) {
-      // console.log('rotating here ', this.shouldRotate);
       this.rotate();
     }
   }
@@ -165,51 +160,28 @@ class Box extends React.Component<any, TState> {
 
     const parentPos = this.element.current!.getBoundingClientRect();
 
-    // if (rotations[this.rotationIdx] === '90deg' || rotations[this.rotationIdx] === '270deg') {
-    //   this.element.current!.style.width = (clientX - parentPos.left) + "px";
-    //   this.element.current!.style.height = (clientY - parentPos.top) + "px";
-    // } else {
     this.element.current!.style.width = (clientX - parentPos.left) + "px";
     this.element.current!.style.height = (clientY - parentPos.top) + "px";
-    // }
-
-    // this.width = (clientX - parentPos.left);
-    // this.height = (clientY - parentPos.top);
-
-    // if (rotations[this.rotationIdx] === '90deg' || rotations[this.rotationIdx] === '270deg') {
-    //   this.element.current!.style.width = this.height + "px";
-    //   this.element.current!.style.height = this.width + "px";
-    // } else {
-    //   this.element.current!.style.width = this.width + "px";
-    //   this.element.current!.style.height = this.height + "px";
-    // }
 
 
     this.shouldRotate = false;
   }
 
   rotate = () => {
-    // this.setState((prev) => ({
-    //   rotationIdx: (prev.rotationIdx + 1) % rotations.length,
-    // }), () => {
-    //   this.shouldRotate = false;
-    // });
-
-    // manually forcing react to update here so we can change it later without a rerender
-    // console.log(rotations[this.rotationIdx]);
     this.rotationIdx = (this.rotationIdx + 1) % rotations.length;
     this.forceUpdate();
     this.shouldRotate = false;
-    // console.log(rotations[this.rotationIdx]);
-
-    const parentStyle = this.element.current!.style;
-    const tableStyle = this.table.current!.style;
 
     const parentPos = this.element.current!.getBoundingClientRect();
+    const parentStyle = this.element.current!.style;
+    const tableStyle = this.table.current!.style;
+    const tableDetailsStyle = this.tableDetails.current!.style;
+    const currRotation = rotations[this.rotationIdx];
 
-    if (rotations90.includes(rotations[this.rotationIdx])) {
+
+    if (rotations90.includes(currRotation)) {
       tableStyle.transform = 'rotate(0deg)';
-      this.tableDetails.current!.style.transform = 'rotate(0deg)';
+      tableDetailsStyle.transform = 'rotate(0deg)';
       // ─────────────────────────────────────────────────────────────────
       // debugger;
       const canvasPos = this.props.canvasRef.current.getBoundingClientRect();
@@ -229,77 +201,26 @@ class Box extends React.Component<any, TState> {
 
       // ─────────────────────────────────────────────────────────────────
     } else {
-      // debugger;
-      if(parentPos.height > parentPos.width) {
-        console.log('height > width')
-        if(rotations[this.rotationIdx] === '135deg' ||
-           rotations[this.rotationIdx] === '315deg') {
-             console.log('135 or 315')
-            tableStyle.transform = `rotate(-${rotations[this.rotationIdx]})`;
-            this.tableDetails.current!.style.transform = `rotate(${rotations[this.rotationIdx]})`;
-          } else {
-            tableStyle.transform = `rotate(${rotations[this.rotationIdx]})`;
-            this.tableDetails.current!.style.transform = `rotate(-${rotations[this.rotationIdx]})`;
-          }
-      }else {
-        console.log('width > height')
-        if(rotations[this.rotationIdx] === '45deg' ||
-        rotations[this.rotationIdx] === '225deg') {
-          console.log('135 or 315')
-         tableStyle.transform = `rotate(${rotations[this.rotationIdx]})`;
-         this.tableDetails.current!.style.transform = `rotate(-${rotations[this.rotationIdx]})`;
+        if(currRotation === '45deg' ||
+        currRotation === '225deg') {
+         tableStyle.transform = `rotate(${currRotation})`;
+         tableDetailsStyle.transform = `rotate(-${currRotation})`;
        } else {
-         tableStyle.transform = `rotate(-${rotations[this.rotationIdx]})`;
-         this.tableDetails.current!.style.transform = `rotate(${rotations[this.rotationIdx]})`;
+         tableStyle.transform = `rotate(-${currRotation})`;
+         tableDetailsStyle.transform = `rotate(${currRotation})`;
        }
-      }
     }
   }
 
   setRotate = () => {
-    console.log('should set rotate')
     this.shouldRotate = true;
   }
 
   getStyleValues = (width: number, height: number, rotation: string) => {
-    // console.log('rotation:', rotation, 'shouldRotate:', this.shouldRotate);'
-    // let newTop;
-    // let newLeft;
-    // if (this.element.current) {
-    //   newTop = this.element.current!.style.top;
-    //   newLeft = this.element.current!.style.left;
-    // }
-
-    // IN SWITCH
-    // const top = +this.element.current!.style.top!.slice(0, this.element.current!.style.top!.length - 2);
-    // const left = +this.element.current!.style.left!.slice(0, this.element.current!.style.left!.length - 2);
-    // const prevCenterH: number = top + tempH;
-    // const prevCenterW: number = left + tempW;
-
-    // const newCenterH: number = top + height;
-    // const newCenterW: number = left + width;
-
-    // const toMoveX: number = newCenterH - prevCenterH;
-    // const toMoveY: number = newCenterW - prevCenterW;
-
-    // newTop = (top - toMoveY) + "px";
-    // newLeft = (left - toMoveX) + "px";
-
-    // const rotations = ['0deg', '45deg', '90deg', '135deg', '180deg', '225deg', '270deg', '315deg'];
-
     switch (rotation) {
       case '90deg':
       case '270deg':
-        //swap width and height
         rotation = '90deg';
-
-        //   if (this.shouldRotate) {
-        //     const tempH = height;
-        //     const tempW = width;
-        //     height = width;
-        //     width = tempH;
-        //   }
-
         break;
       case '0deg':
       case '180deg':
@@ -328,20 +249,16 @@ class Box extends React.Component<any, TState> {
     const { highestIdx } = this.props;
 
     const { width, height, rotation } = this.getStyleValues(this.width, this.height, rotations[this.rotationIdx]);
-    console.log({ ridx: this.rotationIdx, rotation });
 
-    // TODO: On 90/270, the width/height swap but rotation idx doesn't
-    // TODO: height/width swap on 90/270 when they shouldn't
     return (
       <div
         ref={this.element}
         id={name}
         onMouseDown={this.mouseDown}
         className='element'
-        style={{ zIndex: this.dragging ? highestIdx : idx, width: `${width}px`, height: `${height}px`, /* transform: posRef[rotation].parentTransform.transform */ }}>
-        <div ref={this.table} className="table" /* style={{ transform: posRef[rotation].childTransform }} */>
-          {/* <div className="table-details" style={{transform: `rotate(-${rotations[rotation]})`}}>{name}</div> */}
-          <div ref={this.tableDetails} className="table-details" /* style={{ transform: `rotate(-${rotation})` }} */>{name}<br />{rotation}</div>
+        style={{ zIndex: this.dragging ? highestIdx : idx, width: `${width}px`, height: `${height}px` }}>
+        <div ref={this.table} className="table">
+          <div ref={this.tableDetails} className="table-details">{name}<br />{rotation}</div>
         </div>
         <div onMouseDown={this.startResize} className="handle" style={posRef[rotation].handleFixedPos} />
       </div>
