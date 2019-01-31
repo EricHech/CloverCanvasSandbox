@@ -16,6 +16,7 @@ type TProps = {
 }
 
 class CanvasElements extends React.Component<TProps, TState> {
+  // private characters: any[] = this.props.characters;
   state = {
     characters: this.props.characters,
   }
@@ -34,7 +35,15 @@ class CanvasElements extends React.Component<TProps, TState> {
       return {
       characters: newArr,
       }
-    })
+    });
+    // for(let i = 0; i < this.characters.length; i++) {
+    //   if(this.characters[i].name === id) found = this.characters[i]
+    //   else newArr.push(this.characters[i]);
+    // }
+    // if(found) newArr.push(found);
+
+    // this.characters = newArr;
+    // this.forceUpdate();
   }
 
   render() {
@@ -42,9 +51,9 @@ class CanvasElements extends React.Component<TProps, TState> {
       each.idx = i;
       each.color = colors[i];
       return each;
-    })[0];
+    });
 
-    const test = [toDisplay]
+    const test = toDisplay;
     return (
       <div className="App-body">
         Here is some text.

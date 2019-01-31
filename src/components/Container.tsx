@@ -1,8 +1,7 @@
 import React, { Component } from 'react';
-import axios from 'axios';
 
-import Canvas from './components/canvas/Canvas';
-import CanvasElements from './components/dom/CanvasElements';
+import Canvas from './canvas/Canvas';
+import CanvasElements from './dom/CanvasElements';
 
 const API = 'https://swapi.co/api/people/';
 
@@ -18,8 +17,10 @@ class Container extends Component<{}, IState> {
       results: []
     }
   }
+
   componentDidMount() {
-    axios.get(API).then(({ data }) => this.setState({ data })).catch(console.error);
+    // axios.get(API).then(({ data }) => this.setState({ data })).catch(console.error);
+    this.setState({ data: { results: [{ name: 'Look Skywacker', x: 10, y: 10}, { name: 'Princess Lay-a', x: 10, y: 10}]} } );
   }
   render() {
     const { data } = this.state;
