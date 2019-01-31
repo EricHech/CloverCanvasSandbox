@@ -5,84 +5,52 @@ type TState = {
   // rotationIdx: number,
 }
 
-// const rotations = ['0deg', '45deg', '90deg', '135deg', '180deg', '225deg', '270deg', '315deg'];
-const rotations = ['0deg', '90deg', '180deg', '270deg']; // no multiples of 90
+const rotations = ['0deg', '45deg', '90deg', '135deg', '180deg', '225deg', '270deg', '315deg'];
+const rotations90 = ['0deg', '90deg', '180deg', '270deg']; // no multiples of 90
 const posRef: any = {
   '0deg': {
-    parentTransform: {
-      transform: 'rotate(0deg)',
-    },
-    childTransform: 'rotate(0deg)',
     handleFixedPos: {
       bottom: '-10px',
       right: '-10px'
     }
   },
   '45deg': {
-    parentTransform: {
-      transform: 'rotate(0deg)',
-    },
-    childTransform: 'rotate(45deg)',
     handleFixedPos: {
       bottom: '-10px',
       right: '-10px'
     }
   },
   '90deg': {
-    parentTransform: {
-      transform: 'rotate(90deg)',
-    },
-    childTransform: 'rotate(0deg)',
     handleFixedPos: {
-      top: '-10px',
+      bottom: '-10px',
       right: '-10px'
     }
   },
   '135deg': {
-    parentTransform: {
-      transform: 'rotate(0deg)',
-    },
-    childTransform: 'rotate(135deg)',
     handleFixedPos: {
       bottom: '-10px',
       right: '-10px'
     }
   },
   '180deg': {
-    parentTransform: {
-      transform: 'rotate(180deg)',
-    },
-    childTransform: 'rotate(0deg)',
     handleFixedPos: {
       top: '10px',
       left: '10px'
     }
   },
   '225deg': {
-    parentTransform: {
-      transform: 'rotate(0deg)',
-    },
-    childTransform: 'rotate(225deg)',
     handleFixedPos: {
       bottom: '-10px',
       right: '-10px'
     }
   },
   '270deg': {
-    parentTransform: {
-      transform: 'rotate(270deg)',
-    },
-    childTransform: 'rotate(0deg)',
     handleFixedPos: {
       bottom: '-10px',
       left: '-10px'
     }
   },
   '315deg': {
-    parentTransform: {
-      transform: 'rotate(0deg)',
-    },
-    childTransform: 'rotate(315deg)',
     handleFixedPos: {
       bottom: '-10px',
       right: '-10px'
@@ -106,6 +74,8 @@ class Box extends React.Component<any, TState> {
   private shouldRotate: boolean = false;
   private dragging: boolean = false;
   private rotationIdx: number = 0;
+  private table: React.RefObject<HTMLDivElement> = React.createRef();
+  private tableDetails: React.RefObject<HTMLDivElement> = React.createRef();
 
   mouseDown = (e: any) => {
     e.preventDefault();
@@ -193,18 +163,18 @@ class Box extends React.Component<any, TState> {
     this.prevX = clientX;
     this.prevY = clientY;
 
-    const elementPos = this.element.current!.getBoundingClientRect();
+    const parentPos = this.element.current!.getBoundingClientRect();
 
     // if (rotations[this.rotationIdx] === '90deg' || rotations[this.rotationIdx] === '270deg') {
-    //   this.element.current!.style.width = (clientX - elementPos.left) + "px";
-    //   this.element.current!.style.height = (clientY - elementPos.top) + "px";
+    //   this.element.current!.style.width = (clientX - parentPos.left) + "px";
+    //   this.element.current!.style.height = (clientY - parentPos.top) + "px";
     // } else {
-    this.element.current!.style.width = (clientX - elementPos.left) + "px";
-    this.element.current!.style.height = (clientY - elementPos.top) + "px";
+    this.element.current!.style.width = (clientX - parentPos.left) + "px";
+    this.element.current!.style.height = (clientY - parentPos.top) + "px";
     // }
 
-    // this.width = (clientX - elementPos.left);
-    // this.height = (clientY - elementPos.top);
+    // this.width = (clientX - parentPos.left);
+    // this.height = (clientY - parentPos.top);
 
     // if (rotations[this.rotationIdx] === '90deg' || rotations[this.rotationIdx] === '270deg') {
     //   this.element.current!.style.width = this.height + "px";
@@ -227,30 +197,63 @@ class Box extends React.Component<any, TState> {
 
     // manually forcing react to update here so we can change it later without a rerender
     // console.log(rotations[this.rotationIdx]);
-    // this.rotationIdx = (this.rotationIdx + 1) % rotations.length;
-    // this.forceUpdate();
-    // this.shouldRotate = false;
+    this.rotationIdx = (this.rotationIdx + 1) % rotations.length;
+    this.forceUpdate();
+    this.shouldRotate = false;
     // console.log(rotations[this.rotationIdx]);
 
+    const parentStyle = this.element.current!.style;
+    const tableStyle = this.table.current!.style;
 
-    // ─────────────────────────────────────────────────────────────────
-    debugger;
-    const elementPos = this.element.current!.getBoundingClientRect();
-    const currLeft = elementPos.left;
-    const currTop = elementPos.top;
+    const parentPos = this.element.current!.getBoundingClientRect();
 
-    const currWidth = elementPos.width;
-    const currHeight = elementPos.height;
+    if (rotations90.includes(rotations[this.rotationIdx])) {
+      tableStyle.transform = 'rotate(0deg)';
+      this.tableDetails.current!.style.transform = 'rotate(0deg)';
+      // ─────────────────────────────────────────────────────────────────
+      // debugger;
+      const canvasPos = this.props.canvasRef.current.getBoundingClientRect();
+      const currLeft = parentPos.left - canvasPos.left;
+      const currTop = parentPos.top - canvasPos.top;
 
-    const nextLeft = currLeft + (currWidth / 2) - (currHeight / 2);
-    const nextTop = currTop + (currHeight / 2) - (currWidth / 2);
+      const currWidth = parentPos.width;
+      const currHeight = parentPos.height;
 
-    this.element.current!.style.width = currHeight + "px";
-    this.element.current!.style.height = currWidth + "px";
-    this.element.current!.style.left = nextLeft + "px";
-    this.element.current!.style.top = nextTop + "px";
+      const nextLeft = currLeft + (currWidth / 2) - (currHeight / 2);
+      const nextTop = currTop + (currHeight / 2) - (currWidth / 2);
 
-    // ─────────────────────────────────────────────────────────────────
+      parentStyle.width = currHeight + "px";
+      parentStyle.height = currWidth + "px";
+      parentStyle.left = nextLeft + "px";
+      parentStyle.top = nextTop + "px";
+
+      // ─────────────────────────────────────────────────────────────────
+    } else {
+      // debugger;
+      if(parentPos.height > parentPos.width) {
+        console.log('height > width')
+        if(rotations[this.rotationIdx] === '135deg' ||
+           rotations[this.rotationIdx] === '315deg') {
+             console.log('135 or 315')
+            tableStyle.transform = `rotate(-${rotations[this.rotationIdx]})`;
+            this.tableDetails.current!.style.transform = `rotate(${rotations[this.rotationIdx]})`;
+          } else {
+            tableStyle.transform = `rotate(${rotations[this.rotationIdx]})`;
+            this.tableDetails.current!.style.transform = `rotate(-${rotations[this.rotationIdx]})`;
+          }
+      }else {
+        console.log('width > height')
+        if(rotations[this.rotationIdx] === '45deg' ||
+        rotations[this.rotationIdx] === '225deg') {
+          console.log('135 or 315')
+         tableStyle.transform = `rotate(${rotations[this.rotationIdx]})`;
+         this.tableDetails.current!.style.transform = `rotate(-${rotations[this.rotationIdx]})`;
+       } else {
+         tableStyle.transform = `rotate(-${rotations[this.rotationIdx]})`;
+         this.tableDetails.current!.style.transform = `rotate(${rotations[this.rotationIdx]})`;
+       }
+      }
+    }
   }
 
   setRotate = () => {
@@ -336,9 +339,9 @@ class Box extends React.Component<any, TState> {
         onMouseDown={this.mouseDown}
         className='element'
         style={{ zIndex: this.dragging ? highestIdx : idx, width: `${width}px`, height: `${height}px`, /* transform: posRef[rotation].parentTransform.transform */ }}>
-        <div className="table" /* style={{ transform: posRef[rotation].childTransform }} */>
+        <div ref={this.table} className="table" /* style={{ transform: posRef[rotation].childTransform }} */>
           {/* <div className="table-details" style={{transform: `rotate(-${rotations[rotation]})`}}>{name}</div> */}
-          <div className="table-details" style={{ transform: `rotate(-${rotation})` }}>{name}<br />{rotation}</div>
+          <div ref={this.tableDetails} className="table-details" /* style={{ transform: `rotate(-${rotation})` }} */>{name}<br />{rotation}</div>
         </div>
         <div onMouseDown={this.startResize} className="handle" style={posRef[rotation].handleFixedPos} />
       </div>

@@ -17,6 +17,8 @@ type TProps = {
 
 class CanvasElements extends React.Component<TProps, TState> {
   // private characters: any[] = this.props.characters;
+  private canvasRef: React.RefObject<HTMLDivElement> = React.createRef();
+
   state = {
     characters: this.props.characters,
   }
@@ -57,9 +59,9 @@ class CanvasElements extends React.Component<TProps, TState> {
     return (
       <div className="App-body">
         Here is some text.
-        <div className='custom-canvas'>
+        <div ref={this.canvasRef} className='custom-canvas'>
           {test.map((each: any, i: number, arr: any[]) => (
-            <Box key={each.name} box={each} highestIdx={arr.length} reorder={this.reorder} />
+            <Box canvasRef={this.canvasRef} key={each.name} box={each} highestIdx={arr.length} reorder={this.reorder} />
           ))}
         </div>
       </div>
