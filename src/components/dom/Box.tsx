@@ -94,7 +94,6 @@ class Box extends React.Component<TProps, TState> {
       this.shouldRotate = false;
     }
 
-    const tablePos = this.element.current!.getBoundingClientRect();
     const canvasPos = this.props.canvasRef.current!.getBoundingClientRect();
 
     // Calculate the mouse position change from the first click
@@ -104,22 +103,30 @@ class Box extends React.Component<TProps, TState> {
     // Save the position of the element
 
     // Reposition the element
-    const parentSize = this.props.canvasRef.current!.getBoundingClientRect() as DOMRect;
-    const tableSize = this.element.current!.getBoundingClientRect() as DOMRect;
+    const canvasRect = this.props.canvasRef.current!.getBoundingClientRect() as DOMRect;
+    const tableRect = this.element.current!.getBoundingClientRect() as DOMRect;
 
-    // // if (x >= parentSize.width - tableSize.width) {
-    // //   this.element.current!.style.top = y + 'px';
-    // // } else if (y >= parentSize.height - tableSize.height) {
-    // //   this.element.current!.style.left = x + 'px';
-    // // } else {
-    this.element.current!.style.left = this.finalX + 'px';
-    this.element.current!.style.top = this.finalY + 'px';
-    // // }
+    if (tableRect.x > canvasRect.width - tableRect.width + canvasRect.left) {
+      this.element.current!.style.left = canvasRect.width - tableRect.width + canvasRect.left + 'px';
+      this.element.current!.style.top = this.finalY + 'px';
+    }
 
-    // // if (clientX >= parentSize.width) {
-    // //   this.element.current!.style.left = parentSize.width - tableSize.width + 'px';
-    // // } else if (clientY >= parentSize.height) {
-    // //   this.element.current!.style.top = parentSize.height - tableSize.height + 'px';
+    if (tableRect.y > canvasRect.height - tableRect.height + canvasRect.top) {
+      this.element.current!.style.left = this.finalX + 'px';
+      this.element.current!.style.top = canvasRect.height - tableRect.height + 'px';
+
+    }
+
+    if (tableRect.x < canvasRect.width - tableRect.width + canvasRect.left &&
+        tableRect.y < canvasRect.height - tableRect.height + canvasRect.top) {
+      console.log('logging', tableRect.x, tableRect.y)
+      this.element.current!.style.left = this.finalX + 'px';
+      this.element.current!.style.top = this.finalY + 'px';
+    }
+    // // if (clientX >= canvasRect.width) {
+    // //   this.element.current!.style.left = canvasRect.width - tableRect.width + 'px';
+    // // } else if (clientY >= canvasRect.height) {
+    // //   this.element.current!.style.top = canvasRect.height - tableRect.height + 'px';
     // // }
   };
 
