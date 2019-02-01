@@ -31,8 +31,8 @@ const calculateNewCenterPos = (canvasPos: ClientRect, parentPos: ClientRect) => 
 
 class Box extends React.Component<TProps, TState> {
   private element = React.createRef<HTMLDivElement>();
-  private table: React.RefObject<HTMLDivElement> = React.createRef();
-  private tableDetails: React.RefObject<HTMLDivElement> = React.createRef();
+  private table = React.createRef<HTMLDivElement>();
+  private tableDetails= React.createRef<HTMLDivElement>();
   private finalX: number = 0;
   private finalY: number = 0;
   private prevX: number = 0;
@@ -137,7 +137,7 @@ class Box extends React.Component<TProps, TState> {
   rotate = () => {
     // Circularly iterate through the list of rotation degrees
     this.rotationIdx = (this.rotationIdx + 1) % rotations.length;
-    // this.forceUpdate(); // When commented out, `rotations[this.rotationIdx]` in render is one behind the actual position
+    this.forceUpdate(); // When commented out, `rotations[this.rotationIdx]` in render is one behind the actual position
     this.shouldRotate = false;
 
     const parentPos = this.element.current!.getBoundingClientRect();
