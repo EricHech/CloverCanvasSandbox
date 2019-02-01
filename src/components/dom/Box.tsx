@@ -1,16 +1,16 @@
 import React from 'react';
 
 type TState = {
-  id: string | null,
-}
+  id: string | null;
+};
 
 // key={each.name} canvasRef={this.canvasRef} box={each} highestIdx={arr.length} reorder={this.reorder}
 type TProps = {
-  canvasRef: React.RefObject<HTMLDivElement>,
-  box: any, // TODO: properly type
-  highestIdx: number,
-  reorder: (id: string) => void,
-}
+  canvasRef: React.RefObject<HTMLDivElement>;
+  box: any; // TODO: properly type
+  highestIdx: number;
+  reorder: (id: string) => void;
+};
 
 const ROTATION_THRESHOLD = 5;
 type Degrees = '0deg' | '45deg' | '90deg' | '135deg' | '180deg' | '225deg' | '270deg' | '315deg';
@@ -23,16 +23,20 @@ const calculateNewCenterPos = (canvasPos: ClientRect, parentPos: ClientRect) => 
   const currLeft = parentPos.left - canvasPos.left;
   const currTop = parentPos.top - canvasPos.top;
 
-  const nextLeft = currLeft + (parentPos.width / 2) - (parentPos.height / 2);
-  const nextTop = currTop + (parentPos.height / 2) - (parentPos.width / 2);
+  const nextLeft = currLeft + parentPos.width / 2 - parentPos.height / 2;
+  const nextTop = currTop + parentPos.height / 2 - parentPos.width / 2;
 
   return { nextLeft, nextTop };
-}
+};
 
 class Box extends React.Component<TProps, TState> {
   private element = React.createRef<HTMLDivElement>();
   private table = React.createRef<HTMLDivElement>();
-  private tableDetails= React.createRef<HTMLDivElement>();
+  private tableDetails = React.createRef<HTMLDivElement>();
+  private initialMouseX: number = 0;
+  private initialMouseY: number = 0;
+  private initialTableX: number = 0;
+  private initialTableY: number = 0;
   private finalX: number = 0;
   private finalY: number = 0;
   private prevX: number = 0;
@@ -48,6 +52,13 @@ class Box extends React.Component<TProps, TState> {
     e.stopPropagation();
 
     const { clientX, clientY } = e;
+    const tablePos = this.element.current!.getBoundingClientRect() as DOMRect;
+
+    // Save the intial mouse position // TODO:
+    this.initialMouseX = clientX;
+    this.initialMouseY = clientY;
+    this.initialTableX = tablePos.x;
+    this.initialTableY = tablePos.y;
 
     // Bring the selected element to the foreground
     this.props.reorder(this.props.box.name);
@@ -57,7 +68,7 @@ class Box extends React.Component<TProps, TState> {
 
     // Initialize rotation
     this.setRotate();
-  }
+  };
 
   startDrag = (clientX: number, clientY: number) => {
     // Store the mouse position for use in the next iteration
@@ -69,7 +80,7 @@ class Box extends React.Component<TProps, TState> {
     document.onmouseup = this.mouseUp;
 
     this.dragging = true;
-  }
+  };
 
   continueDrag = (e: MouseEvent) => {
     e.preventDefault();
@@ -79,45 +90,43 @@ class Box extends React.Component<TProps, TState> {
 
     // The threshold for the rotation to stop if the table is moved
     // Rotate it if it's just nudged a little
-    if (Math.abs(this.prevX - clientX) > ROTATION_THRESHOLD
-      || Math.abs(this.prevY - clientY) > ROTATION_THRESHOLD) {
+    if (Math.abs(this.prevX - clientX) > ROTATION_THRESHOLD || Math.abs(this.prevY - clientY) > ROTATION_THRESHOLD) {
       this.shouldRotate = false;
     }
 
-    // Calculate the mouse position change from the last iteration
-    this.finalX = this.prevX - clientX;
-    this.finalY = this.prevY - clientY;
+    const tablePos = this.element.current!.getBoundingClientRect();
+    const canvasPos = this.props.canvasRef.current!.getBoundingClientRect();
 
-    // Store the mouse position for the next iteration
-    this.prevX = clientX;
-    this.prevY = clientY;
+    // Calculate the mouse position change from the first click
+    this.finalX = clientX - this.initialMouseX + this.initialTableX - canvasPos.left;
+    this.finalY = clientY - this.initialMouseY + this.initialTableY - canvasPos.top;
 
     // Save the position of the element
-    const x = (this.element.current!.offsetLeft - this.finalX);
-    const y = (this.element.current!.offsetTop - this.finalY);
 
     // Reposition the element
     const parentSize = this.props.canvasRef.current!.getBoundingClientRect() as DOMRect;
     const tableSize = this.element.current!.getBoundingClientRect() as DOMRect;
 
-    if (x >= parentSize.width - tableSize.width || y >= parentSize.height - tableSize.height) {
-      document.onmouseup = null;
-      document.onmousemove = null;
-      this.dragging = false;
-      return;
-    }
+    // // if (x >= parentSize.width - tableSize.width) {
+    // //   this.element.current!.style.top = y + 'px';
+    // // } else if (y >= parentSize.height - tableSize.height) {
+    // //   this.element.current!.style.left = x + 'px';
+    // // } else {
+    this.element.current!.style.left = this.finalX + 'px';
+    this.element.current!.style.top = this.finalY + 'px';
+    // // }
 
-    // if (x < parentSize.height + tableSize || ) {
-
-    // }
-
-    this.element.current!.style.left = x + "px";
-    this.element.current!.style.top = y + "px";
-  }
+    // // if (clientX >= parentSize.width) {
+    // //   this.element.current!.style.left = parentSize.width - tableSize.width + 'px';
+    // // } else if (clientY >= parentSize.height) {
+    // //   this.element.current!.style.top = parentSize.height - tableSize.height + 'px';
+    // // }
+  };
 
   mouseUp = (e: MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+
     document.onmouseup = null;
     document.onmousemove = null;
     this.dragging = false;
@@ -125,7 +134,7 @@ class Box extends React.Component<TProps, TState> {
     if (this.shouldRotate) {
       this.rotate();
     }
-  }
+  };
 
   startResize = (e: React.MouseEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -133,7 +142,7 @@ class Box extends React.Component<TProps, TState> {
 
     document.onmousemove = this.continueResize;
     document.onmouseup = this.mouseUp;
-  }
+  };
 
   continueResize = (e: MouseEvent) => {
     e.preventDefault();
@@ -144,9 +153,9 @@ class Box extends React.Component<TProps, TState> {
     const parentPos = this.element.current!.getBoundingClientRect();
 
     // Calculate the new width and height based on the difference between the top/left and the positiono of the mouse at the bottom/right
-    this.element.current!.style.width = (clientX - parentPos.left) + "px";
-    this.element.current!.style.height = (clientY - parentPos.top) + "px";
-  }
+    this.element.current!.style.width = clientX - parentPos.left + 'px';
+    this.element.current!.style.height = clientY - parentPos.top + 'px';
+  };
 
   rotate = () => {
     // Circularly iterate through the list of rotation degrees
@@ -168,16 +177,15 @@ class Box extends React.Component<TProps, TState> {
       const canvasPos = this.props.canvasRef.current!.getBoundingClientRect();
 
       // Reverse the width and height
-      parentStyle.width = parentPos.height + "px";
-      parentStyle.height = parentPos.width + "px";
+      parentStyle.width = parentPos.height + 'px';
+      parentStyle.height = parentPos.width + 'px';
 
       // Because the rotation is anchored to the top/left, we shift that position to visually maintain the same center point
       const { nextLeft, nextTop } = calculateNewCenterPos(canvasPos, parentPos);
 
       // Reposition parent element
-      parentStyle.left = nextLeft + "px";
-      parentStyle.top = nextTop + "px";
-
+      parentStyle.left = nextLeft + 'px';
+      parentStyle.top = nextTop + 'px';
     } else {
       // If you resize a table from a skyscraper shape to a bridge, the rotations need to invert as well.
       // If the table is diagonal, check the current orientation and rotate it the correct way.
@@ -193,11 +201,11 @@ class Box extends React.Component<TProps, TState> {
       // The table details need to rotate opposite the table to stay aligned
       tableDetailsStyle.transform = `rotate(${clockwise ? '-' : ''}${currentRotation})`;
     }
-  }
+  };
 
   setRotate = () => {
     this.shouldRotate = true;
-  }
+  };
 
   render() {
     const { name, idx } = this.props.box;
@@ -205,14 +213,13 @@ class Box extends React.Component<TProps, TState> {
 
     const rotation = rotations[this.rotationIdx];
     return (
-      <div
-        ref={this.element}
-        id={name}
-        onMouseDown={this.mouseDown}
-        className='element'
-        style={{ zIndex: this.dragging ? highestIdx : idx, width: `${this.width}px`, height: `${this.height}px` }}>
+      <div ref={this.element} id={name} onMouseDown={this.mouseDown} className="element" style={{ zIndex: this.dragging ? highestIdx : idx, width: `${this.width}px`, height: `${this.height}px` }}>
         <div ref={this.table} className="table">
-          <div ref={this.tableDetails} className="table-details">{name}<br />{rotation}</div>
+          <div ref={this.tableDetails} className="table-details">
+            {name}
+            <br />
+            {rotation}
+          </div>
         </div>
         <div onMouseDown={this.startResize} className="handle" style={{ bottom: '-10px', right: '-10px' }} />
       </div>
