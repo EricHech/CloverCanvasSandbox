@@ -38,14 +38,6 @@ class CanvasElements extends React.Component<TProps, TState> {
       characters: newArr,
       }
     });
-    // for(let i = 0; i < this.characters.length; i++) {
-    //   if(this.characters[i].name === id) found = this.characters[i]
-    //   else newArr.push(this.characters[i]);
-    // }
-    // if(found) newArr.push(found);
-
-    // this.characters = newArr;
-    // this.forceUpdate();
   }
 
   render() {
@@ -61,7 +53,7 @@ class CanvasElements extends React.Component<TProps, TState> {
         Here is some text.
         <div ref={this.canvasRef} className='custom-canvas'>
           {test.map((each: any, i: number, arr: any[]) => (
-            <Box canvasRef={this.canvasRef} key={each.name} box={each} highestIdx={arr.length} reorder={this.reorder} />
+            <Box key={each.name} canvasRef={this.canvasRef} box={each} highestIdx={arr.length} reorder={this.reorder} />
           ))}
         </div>
       </div>

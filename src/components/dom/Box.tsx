@@ -4,6 +4,14 @@ type TState = {
   id: string | null,
 }
 
+// key={each.name} canvasRef={this.canvasRef} box={each} highestIdx={arr.length} reorder={this.reorder}
+type TProps = {
+  canvasRef: React.RefObject<HTMLDivElement>,
+  box: any, // TODO: properly type
+  highestIdx: number,
+  reorder: (id: string) => void,
+}
+
 const ROTATION_THRESHOLD = 5;
 type Degrees = '0deg' | '45deg' | '90deg' | '135deg' | '180deg' | '225deg' | '270deg' | '315deg';
 type Degrees90 = '0deg' | '90deg' | '180deg' | '270deg';
@@ -11,22 +19,17 @@ type Degrees90 = '0deg' | '90deg' | '180deg' | '270deg';
 const rotations: Degrees[] = ['0deg', '45deg', '90deg', '135deg', '180deg', '225deg', '270deg', '315deg'];
 const rotations90: Degrees90[] = ['0deg', '90deg', '180deg', '270deg']; // no multiples of 90
 
-
-const calculateNewCenterPos = (canvasPos: any, parentPos: any) => {
+const calculateNewCenterPos = (canvasPos: ClientRect, parentPos: ClientRect) => {
   const currLeft = parentPos.left - canvasPos.left;
   const currTop = parentPos.top - canvasPos.top;
 
   const nextLeft = currLeft + (parentPos.width / 2) - (parentPos.height / 2);
   const nextTop = currTop + (parentPos.height / 2) - (parentPos.width / 2);
 
-  return {
-    nextLeft,
-    nextTop
-  }
+  return { nextLeft, nextTop }
 }
 
-// TODO: Type props
-class Box extends React.Component<any, TState> {
+class Box extends React.Component<TProps, TState> {
   private element = React.createRef<HTMLDivElement>();
   private table: React.RefObject<HTMLDivElement> = React.createRef();
   private tableDetails: React.RefObject<HTMLDivElement> = React.createRef();
@@ -40,7 +43,7 @@ class Box extends React.Component<any, TState> {
   private dragging: boolean = false;
   private rotationIdx: number = 0;
 
-  mouseDown = (e: any) => {
+  mouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
 
@@ -68,7 +71,7 @@ class Box extends React.Component<any, TState> {
     this.dragging = true;
   }
 
-  continueDrag = (e: any) => {
+  continueDrag = (e: MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
 
@@ -98,7 +101,7 @@ class Box extends React.Component<any, TState> {
     this.element.current!.style.top = y + "px";
   }
 
-  mouseUp = (e: any) => {
+  mouseUp = (e: MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     document.onmouseup = null;
@@ -110,17 +113,15 @@ class Box extends React.Component<any, TState> {
     }
   }
 
-  startResize = (e: any) => {
+  startResize = (e: React.MouseEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
-
-    const { target, clientX, clientY } = e;
 
     document.onmousemove = this.continueResize;
     document.onmouseup = this.mouseUp;
   }
 
-  continueResize = (e: any) => {
+  continueResize = (e: MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
 
@@ -134,6 +135,7 @@ class Box extends React.Component<any, TState> {
   }
 
   rotate = () => {
+    // Circularly iterate through the list of rotation degrees
     this.rotationIdx = (this.rotationIdx + 1) % rotations.length;
     // this.forceUpdate(); // When commented out, `rotations[this.rotationIdx]` in render is one behind the actual position
     this.shouldRotate = false;
@@ -149,7 +151,7 @@ class Box extends React.Component<any, TState> {
       tableStyle.transform = 'rotate(0deg)';
       tableDetailsStyle.transform = 'rotate(0deg)';
 
-      const canvasPos = this.props.canvasRef.current.getBoundingClientRect();
+      const canvasPos = this.props.canvasRef.current!.getBoundingClientRect();
 
       // Reverse the width and height
       parentStyle.width = parentPos.height + "px";
