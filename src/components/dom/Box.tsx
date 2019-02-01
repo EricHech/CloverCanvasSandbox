@@ -26,7 +26,7 @@ const calculateNewCenterPos = (canvasPos: ClientRect, parentPos: ClientRect) => 
   const nextLeft = currLeft + (parentPos.width / 2) - (parentPos.height / 2);
   const nextTop = currTop + (parentPos.height / 2) - (parentPos.width / 2);
 
-  return { nextLeft, nextTop }
+  return { nextLeft, nextTop };
 }
 
 class Box extends React.Component<TProps, TState> {
