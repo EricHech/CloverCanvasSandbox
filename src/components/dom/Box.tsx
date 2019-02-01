@@ -97,6 +97,20 @@ class Box extends React.Component<TProps, TState> {
     const y = (this.element.current!.offsetTop - this.finalY);
 
     // Reposition the element
+    const parentSize = this.props.canvasRef.current!.getBoundingClientRect() as DOMRect;
+    const tableSize = this.element.current!.getBoundingClientRect() as DOMRect;
+
+    if (x >= parentSize.width - tableSize.width || y >= parentSize.height - tableSize.height) {
+      document.onmouseup = null;
+      document.onmousemove = null;
+      this.dragging = false;
+      return;
+    }
+
+    // if (x < parentSize.height + tableSize || ) {
+
+    // }
+
     this.element.current!.style.left = x + "px";
     this.element.current!.style.top = y + "px";
   }
