@@ -106,28 +106,30 @@ class Box extends React.Component<TProps, TState> {
     const canvasRect = this.props.canvasRef.current!.getBoundingClientRect() as DOMRect;
     const tableRect = this.element.current!.getBoundingClientRect() as DOMRect;
 
-    if (tableRect.x > canvasRect.width - tableRect.width + canvasRect.left) {
-      this.element.current!.style.left = canvasRect.width - tableRect.width + canvasRect.left + 'px';
-      this.element.current!.style.top = this.finalY + 'px';
+    let top = this.finalY + 'px';
+    let left = this.finalX + 'px';
+
+    // if (tableRect.x > canvasRect.width - tableRect.width + canvasRect.left) {
+    //   console.log('1');
+    //   left = canvasRect.width - tableRect.width + canvasRect.left + 'px';
+
+    //   return;
+    // }
+
+    // if (tableRect.y > canvasRect.height - tableRect.height + canvasRect.top) {
+    //   console.log('2');
+    //   top = canvasRect.height - tableRect.height + 'px';
+
+    //   return;
+    // }
+
+    console.log('3');
+    if (this.finalX < canvasRect.width - tableRect.width + canvasRect.left && this.finalY < canvasRect.height - tableRect.height + canvasRect.left) {
+      this.element.current!.style.top = top;
+      this.element.current!.style.left = left;
     }
 
-    if (tableRect.y > canvasRect.height - tableRect.height + canvasRect.top) {
-      this.element.current!.style.left = this.finalX + 'px';
-      this.element.current!.style.top = canvasRect.height - tableRect.height + 'px';
-
-    }
-
-    if (tableRect.x < canvasRect.width - tableRect.width + canvasRect.left &&
-        tableRect.y < canvasRect.height - tableRect.height + canvasRect.top) {
-      console.log('logging', tableRect.x, tableRect.y)
-      this.element.current!.style.left = this.finalX + 'px';
-      this.element.current!.style.top = this.finalY + 'px';
-    }
-    // // if (clientX >= canvasRect.width) {
-    // //   this.element.current!.style.left = canvasRect.width - tableRect.width + 'px';
-    // // } else if (clientY >= canvasRect.height) {
-    // //   this.element.current!.style.top = canvasRect.height - tableRect.height + 'px';
-    // // }
+    console.log('TABLE', tableRect.x, tableRect.y, canvasRect.width - tableRect.width + canvasRect.left);
   };
 
   mouseUp = (e: MouseEvent) => {
