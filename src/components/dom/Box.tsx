@@ -88,19 +88,17 @@ class Box extends React.Component<TProps, TState> {
 
     const { clientX, clientY } = e;
 
+    // TODO: Make this work again
     // The threshold for the rotation to stop if the table is moved
     // Rotate it if it's just nudged a little
     if (Math.abs(this.prevX - clientX) > ROTATION_THRESHOLD || Math.abs(this.prevY - clientY) > ROTATION_THRESHOLD) {
       this.shouldRotate = false;
     }
 
-    const canvasPos = this.props.canvasRef.current!.getBoundingClientRect();
-
     // Calculate the mouse position change from the first click
+    const canvasPos = this.props.canvasRef.current!.getBoundingClientRect();
     this.finalX = clientX - this.initialMouseX + this.initialTableX - canvasPos.left;
     this.finalY = clientY - this.initialMouseY + this.initialTableY - canvasPos.top;
-
-    // Save the position of the element
 
     // Reposition the element
     const canvasRect = this.props.canvasRef.current!.getBoundingClientRect() as DOMRect;
@@ -109,51 +107,31 @@ class Box extends React.Component<TProps, TState> {
     let top = this.finalY + 'px';
     let left = this.finalX + 'px';
 
-    if (this.finalX < canvasRect.width - tableRect.width + canvasRect.left && this.finalX > 0) {
-      console.log(tableRect.left)
+    // Table pos, and keep sliding when out of bounds
+    if (this.finalX < canvasRect.width - tableRect.width && this.finalX > 0) {
       this.element.current!.style.left = left;
     }
-
-    if (this.finalY < canvasRect.height - tableRect.height + canvasRect.left && this.finalY > 0) {
+    if (this.finalY < canvasRect.height - tableRect.height && this.finalY > 0) {
       this.element.current!.style.top = top;
     }
-    if (this.finalX < canvasRect.width - tableRect.width + canvasRect.left && this.finalY < canvasRect.height - tableRect.height + canvasRect.left && this.finalX > 0 && this.finalY > 0) {
-      console.log('3')
+    if (this.finalX < canvasRect.width - tableRect.width && this.finalY < canvasRect.height - tableRect.height && this.finalX > 0 && this.finalY > 0) {
       this.element.current!.style.top = top;
       this.element.current!.style.left = left;
     }
 
+    // Mouse pos, sets table to edge if mouse escapes
     if (clientX >= canvasRect.width + canvasRect.left) {
-      console.log(clientX)
-      this.element.current!.style.left = canvasRect.width - tableRect.width + canvasRect.left + 'px';
+      this.element.current!.style.left = canvasRect.width - tableRect.width + 'px';
     }
     if (clientY >= canvasRect.height + canvasRect.top) {
-      this.element.current!.style.top = canvasRect.height - tableRect.height + canvasRect.left + 'px';
+      this.element.current!.style.top = canvasRect.height - tableRect.height + 'px';
     }
     if (clientX <= 0) {
-      console.log(clientX)
       this.element.current!.style.left = '0px';
     }
     if (clientY <= 0) {
       this.element.current!.style.top = '0px';
     }
-
-    // if (this.finalY < canvasRect.height - tableRect.height + canvasRect.left) {
-    //   this.element.current!.style.top = '0px';
-    // }
-
-    // if (clientX < 0 + tableRect.width) {
-    //   this.element.current!.style.left = '0px';
-    // }
-
-    // console.log(this.finalY)
-    // if (this.finalX > 0) {
-    //   this.element.current!.style.left = left;
-    // }
-    // if (this.finalY > 0) {
-    //   this.element.current!.style.top = top;
-    // }
-
   };
 
   mouseUp = (e: MouseEvent) => {

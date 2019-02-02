@@ -50,7 +50,9 @@ class CanvasElements extends React.Component<TProps, TState> {
     const test = toDisplay;
     return (
       <div className="App-body">
-        Here is some text.
+        Here is some text.<br/>
+        And more<br/>
+        and more.
         <div ref={this.canvasRef} className='custom-canvas'>
           {test.map((each: any, i: number, arr: any[]) => (
             <Box key={each.name} canvasRef={this.canvasRef} box={each} highestIdx={arr.length} reorder={this.reorder} />
