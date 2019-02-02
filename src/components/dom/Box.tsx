@@ -124,10 +124,20 @@ class Box extends React.Component<TProps, TState> {
     // }
 
     console.log('3');
+    if (this.finalX < canvasRect.width - tableRect.width + canvasRect.left) {
+      this.element.current!.style.left = left;
+    } else {
+      //
+    }
+    if (this.finalY < canvasRect.height - tableRect.height + canvasRect.left) {
+      this.element.current!.style.top = top;
+    }
     if (this.finalX < canvasRect.width - tableRect.width + canvasRect.left && this.finalY < canvasRect.height - tableRect.height + canvasRect.left) {
       this.element.current!.style.top = top;
       this.element.current!.style.left = left;
     }
+
+    // if (clientX > )
 
     console.log('TABLE', tableRect.x, tableRect.y, canvasRect.width - tableRect.width + canvasRect.left);
   };
