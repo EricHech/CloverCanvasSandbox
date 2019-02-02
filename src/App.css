@@ -32,7 +32,7 @@ canvas {
 }
 
 .custom-canvas {
-  width: 500px;
+  width: 1000px;
   height: 500px;
   position: relative;
   outline: 5px dotted darkgrey;

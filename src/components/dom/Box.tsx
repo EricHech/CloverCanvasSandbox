@@ -109,37 +109,51 @@ class Box extends React.Component<TProps, TState> {
     let top = this.finalY + 'px';
     let left = this.finalX + 'px';
 
-    // if (tableRect.x > canvasRect.width - tableRect.width + canvasRect.left) {
-    //   console.log('1');
-    //   left = canvasRect.width - tableRect.width + canvasRect.left + 'px';
-
-    //   return;
-    // }
-
-    // if (tableRect.y > canvasRect.height - tableRect.height + canvasRect.top) {
-    //   console.log('2');
-    //   top = canvasRect.height - tableRect.height + 'px';
-
-    //   return;
-    // }
-
-    console.log('3');
-    if (this.finalX < canvasRect.width - tableRect.width + canvasRect.left) {
+    if (this.finalX < canvasRect.width - tableRect.width + canvasRect.left && this.finalX > 0) {
+      console.log(tableRect.left)
       this.element.current!.style.left = left;
-    } else {
-      //
     }
-    if (this.finalY < canvasRect.height - tableRect.height + canvasRect.left) {
+
+    if (this.finalY < canvasRect.height - tableRect.height + canvasRect.left && this.finalY > 0) {
       this.element.current!.style.top = top;
     }
-    if (this.finalX < canvasRect.width - tableRect.width + canvasRect.left && this.finalY < canvasRect.height - tableRect.height + canvasRect.left) {
+    if (this.finalX < canvasRect.width - tableRect.width + canvasRect.left && this.finalY < canvasRect.height - tableRect.height + canvasRect.left && this.finalX > 0 && this.finalY > 0) {
+      console.log('3')
       this.element.current!.style.top = top;
       this.element.current!.style.left = left;
     }
 
-    // if (clientX > )
+    if (clientX >= canvasRect.width + canvasRect.left) {
+      console.log(clientX)
+      this.element.current!.style.left = canvasRect.width - tableRect.width + canvasRect.left + 'px';
+    }
+    if (clientY >= canvasRect.height + canvasRect.top) {
+      this.element.current!.style.top = canvasRect.height - tableRect.height + canvasRect.left + 'px';
+    }
+    if (clientX <= 0) {
+      console.log(clientX)
+      this.element.current!.style.left = '0px';
+    }
+    if (clientY <= 0) {
+      this.element.current!.style.top = '0px';
+    }
 
-    console.log('TABLE', tableRect.x, tableRect.y, canvasRect.width - tableRect.width + canvasRect.left);
+    // if (this.finalY < canvasRect.height - tableRect.height + canvasRect.left) {
+    //   this.element.current!.style.top = '0px';
+    // }
+
+    // if (clientX < 0 + tableRect.width) {
+    //   this.element.current!.style.left = '0px';
+    // }
+
+    // console.log(this.finalY)
+    // if (this.finalX > 0) {
+    //   this.element.current!.style.left = left;
+    // }
+    // if (this.finalY > 0) {
+    //   this.element.current!.style.top = top;
+    // }
+
   };
 
   mouseUp = (e: MouseEvent) => {
