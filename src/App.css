@@ -18,8 +18,8 @@
 }
 
 .App-body {
-  /* display: flex;
-  flex-direction: column; */
+  display: flex;
+  align-items: center;
   background-color: #282c34;
   color: white;
   padding-bottom: 3px;
@@ -32,11 +32,11 @@ canvas {
 }
 
 .custom-canvas {
-  width: 1000px;
+  width: 1400px;
   height: 500px;
   position: relative;
   outline: 5px dotted darkgrey;
-
+  margin: 0 auto;
 }
 
 .element {
