@@ -216,12 +216,14 @@ class Box extends React.Component<TProps, TState> {
     const tableDetailsStyle = this.tableDetails.current!.style;
     const currentRotation = rotations[this.rotationIdx];
 
+    const moveTable = createCSSEditFunc(this.element);
+
     if (rotations90.includes(currentRotation as Degrees90)) {
       // Reset the css transforms because 90 degree rotations are handled by swapping the width and height
       tableStyle.transform = 'rotate(0deg)';
       tableDetailsStyle.transform = 'rotate(0deg)';
 
-      const canvasPos = this.props.floorplan.current!.getBoundingClientRect();
+      const canvasPos = this.props.floorplan.current!.getBoundingClientRect() as DOMRect;
 
       // Reverse the width and height
       parentStyle.width = parentPos.height + 'px';
@@ -231,8 +233,22 @@ class Box extends React.Component<TProps, TState> {
       const { nextLeft, nextTop } = calculateNewCenterPos(canvasPos, parentPos);
 
       // Reposition parent element
-      parentStyle.left = nextLeft + 'px';
-      parentStyle.top = nextTop + 'px';
+
+      const newParentPos = this.element.current!.getBoundingClientRect();
+
+      console.log(newParentPos.top, newParentPos.top, canvasPos.top, newParentPos.height, canvasPos.height)
+      if (newParentPos.top + newParentPos.height > canvasPos.height) {
+        console.log("Ran TOP:", canvasPos.height - newParentPos.height)
+        moveTable('top', canvasPos.height - newParentPos.height);
+      } else {
+        moveTable('top', nextTop);
+      }
+      if (newParentPos.left + newParentPos.width > canvasPos.width) {
+        console.log("Ran LEFT:", canvasPos.left + canvasPos.width - newParentPos.width)
+        moveTable('left', canvasPos.width - canvasPos.left - newParentPos.width);
+      } else {
+        moveTable('left', nextLeft);
+      }
     } else {
       // If you resize a table from a skyscraper shape to a bridge, the rotations need to invert as well.
       // If the table is diagonal, check the current orientation and rotate it the correct way.

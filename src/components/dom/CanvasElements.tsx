@@ -16,15 +16,6 @@ type TProps = {
   characters: any[]
 }
 
-// this sucks because TS doesnt have types for these
-interface CustomCanvasRenderingContext2D extends CanvasRenderingContext2D {
-  webkitBackingStorePixelRatio: number;
-  mozBackingStorePixelRatio: number;
-  msBackingStorePixelRatio: number;
-  oBackingStorePixelRatio: number;
-  backingStorePixelRatio: number;
-}
-
 class CanvasElements extends React.Component<TProps, TState> {
   // private characters: any[] = this.props.characters;
   private floorplan: React.RefObject<HTMLDivElement> = React.createRef();
@@ -59,95 +50,21 @@ class CanvasElements extends React.Component<TProps, TState> {
 
   }
 
-  // setupCanvas(canvas: HTMLCanvasElement, width:number, height:number) {
-  //   // assume the device pixel ratio is 1 if the browser doesn't specify it
-  //   const devicePixelRatio = window.devicePixelRatio || 1;
-  //   const context = canvas.getContext('2d')! as any as CustomCanvasRenderingContext2D;
-
-    // // determine the 'backing store ratio' of the canvas context
-    // const backingStoreRatio = (
-    //   context.webkitBackingStorePixelRatio ||
-    //   context.mozBackingStorePixelRatio ||
-    //   context.msBackingStorePixelRatio ||
-    //   context.oBackingStorePixelRatio ||
-    //   context.backingStorePixelRatio || 1
-    // );
-
-    // // determine the actual ratio we want to draw at
-    // const ratio = devicePixelRatio / backingStoreRatio;
-
-    // if (devicePixelRatio !== backingStoreRatio) {
-    //   // set the 'real' canvas size to the higher width/height
-    //   canvas.width = width * ratio;
-    //   canvas.height = height * ratio;
-
-    //   // ...then scale it back down with CSS
-    //   canvas.style.width = width + 'px';
-    //   canvas.style.height = height + 'px';
-    // }
-    // else {
-    //   // this is a normal 1:1 device; just scale it simply
-    //   canvas.width = width;
-    //   canvas.height = height;
-    //   canvas.style.width = '';
-    //   canvas.style.height = '';
-    // }
-
-    // // scale the drawing context so everything will work at the higher ratio
-    // context.scale(ratio, ratio);
-
-  //     if (window.devicePixelRatio){
-  //       // canvas
-  //       canvas.width = width * window.devicePixelRatio;
-  //       canvas.height = height * window.devicePixelRatio;
-
-  //       context.scale(window.devicePixelRatio, window.devicePixelRatio);
-
-  //       canvas.width = width;
-  //       canvas.height = height;
-  //   }
-  //   return context;
-  // }
-
-  setupCanvas(canvas: HTMLCanvasElement, width:number, height:number) {
+  setupCanvas(canvas: HTMLCanvasElement, width: number, height: number) {
     // assume the device pixel ratio is 1 if the browser doesn't specify it
     const devicePixelRatio = window.devicePixelRatio || 1;
-    const context = canvas.getContext('2d')! as any as CustomCanvasRenderingContext2D;
+    const context = canvas.getContext('2d')!;
 
-    // determine the 'backing store ratio' of the canvas context
-    const backingStoreRatio = (
-      context.webkitBackingStorePixelRatio ||
-      context.mozBackingStorePixelRatio ||
-      context.msBackingStorePixelRatio ||
-      context.oBackingStorePixelRatio ||
-      context.backingStorePixelRatio || 1
-    );
+    // canvas
+    canvas.width = width * devicePixelRatio;
+    canvas.height = height * devicePixelRatio;
 
-    // determine the actual ratio we want to draw at
-    const ratio = devicePixelRatio / backingStoreRatio;
+    canvas.style.width = width + 'px';
+    canvas.style.height = height + 'px';
 
-    if (devicePixelRatio !== backingStoreRatio) {
-      // set the 'real' canvas size to the higher width/height
-      canvas.width = width * ratio;
-      canvas.height = height * ratio;
-
-      // ...then scale it back down with CSS
-      canvas.style.width = width + 'px';
-      canvas.style.height = height + 'px';
-    }
-    else {
-      // this is a normal 1:1 device; just scale it simply
-      canvas.width = width;
-      canvas.height = height;
-      canvas.style.width = '';
-      canvas.style.height = '';
-    }
-
-    // scale the drawing context so everything will work at the higher ratio
-    context.scale(ratio, ratio);
+    context.scale(devicePixelRatio, devicePixelRatio);
     return context;
   }
-
 
   reorder = (id: string) => {
     // reorder the tables to ensure the one being dragged is on top of the stack
