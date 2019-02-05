@@ -25,8 +25,7 @@ const rotations90: Degrees90[] = ['0deg', '90deg', '180deg', '270deg']; // no mu
 
 const snapToGrid = (value: number): number => Math.round(value / 10) * 10;
 
-const createCSSEditFunc = (el: React.RefObject<HTMLDivElement>) =>
-  (attrib: any, value: number, unit: string = 'px') => (el.current!.style[attrib] = value + unit);
+const createCSSEditFunc = (el: React.RefObject<HTMLDivElement>) => (attrib: any, value: number, unit: string = 'px') => (el.current!.style[attrib] = value + unit);
 
 const calculateNewCenterPos = (canvasPos: ClientRect, parentPos: ClientRect) => {
   const currLeft = parentPos.left - canvasPos.left;
@@ -110,8 +109,7 @@ class Box extends React.Component<TProps, TState> {
 
     // The threshold for the rotation to stop if the table is moved
     // Rotate it if it's just nudged a little
-    if (Math.abs(this.initialMouseX - clientX) > ROTATION_THRESHOLD ||
-      Math.abs(this.initialMouseY - clientY) > ROTATION_THRESHOLD) {
+    if (Math.abs(this.initialMouseX - clientX) > ROTATION_THRESHOLD || Math.abs(this.initialMouseY - clientY) > ROTATION_THRESHOLD) {
       this.shouldRotate = false;
     }
 
@@ -196,7 +194,6 @@ class Box extends React.Component<TProps, TState> {
 
     if (clientX - parentPos.left <= TABLE_MIN_SIZE[0]) {
       resizeTable('width', TABLE_MIN_SIZE[0]);
-
     }
 
     if (clientY - parentPos.top <= TABLE_MIN_SIZE[1]) {
@@ -234,20 +231,21 @@ class Box extends React.Component<TProps, TState> {
 
       // Reposition parent element
 
+      moveTable('top', nextTop);
+      moveTable('left', nextLeft);
       const newParentPos = this.element.current!.getBoundingClientRect();
 
-      console.log(newParentPos.top, newParentPos.top, canvasPos.top, newParentPos.height, canvasPos.height)
-      if (newParentPos.top + newParentPos.height > canvasPos.height) {
-        console.log("Ran TOP:", canvasPos.height - newParentPos.height)
+      if (newParentPos.top + newParentPos.height > canvasPos.height + canvasPos.top) {
         moveTable('top', canvasPos.height - newParentPos.height);
-      } else {
-        moveTable('top', nextTop);
       }
-      if (newParentPos.left + newParentPos.width > canvasPos.width) {
-        console.log("Ran LEFT:", canvasPos.left + canvasPos.width - newParentPos.width)
-        moveTable('left', canvasPos.width - canvasPos.left - newParentPos.width);
-      } else {
-        moveTable('left', nextLeft);
+      if (newParentPos.left + newParentPos.width > canvasPos.width + canvasPos.left) {
+        moveTable('left', canvasPos.width - newParentPos.width);
+      }
+      if (newParentPos.top - canvasPos.top < 0) {
+        moveTable('top', 0);
+      }
+      if (newParentPos.left - canvasPos.left < 0) {
+        moveTable('left', 0);
       }
     } else {
       // If you resize a table from a skyscraper shape to a bridge, the rotations need to invert as well.
