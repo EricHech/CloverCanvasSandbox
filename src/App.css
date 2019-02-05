@@ -19,6 +19,7 @@
 
 .App-body {
   display: flex;
+  position: relative;
   align-items: center;
   background-color: #282c34;
   color: white;
@@ -27,15 +28,16 @@
 }
 
 canvas {
-  outline: 5px dotted darkgrey;
-  max-width: 1000px;
+  position: absolute;
+  left: 0;
+  top: 0;
 }
 
-.custom-canvas {
-  width: 1400px;
-  height: 500px;
+.floorplan {
+  width: 1500px;
+  height: 600px;
   position: relative;
-  outline: 5px dotted darkgrey;
+  outline: 2px solid darkgrey;
   margin: 0 auto;
 }
 

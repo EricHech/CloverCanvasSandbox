@@ -1,11 +1,11 @@
-import React from 'react';
+import React, { RefObject } from 'react';
 
 type TState = {
   id: string | null;
 };
 
 type TProps = {
-  canvasRef: React.RefObject<HTMLDivElement>;
+  floorplan: React.RefObject<HTMLDivElement>;
   box: any; // TODO: properly type
   highestIdx: number;
   reorder: (id: string) => void;
@@ -15,13 +15,18 @@ const ROTATION_THRESHOLD = 5;
 
 // w / h
 const GRID = [150, 60];
-const MAX_SIZE = [200, 200];
-const MIN_SIZE = [50, 50];
+const TABLE_MAX_SIZE = [200, 200];
+const TABLE_MIN_SIZE = [50, 50];
 type Degrees = '0deg' | '45deg' | '90deg' | '135deg' | '180deg' | '225deg' | '270deg' | '315deg';
 type Degrees90 = '0deg' | '90deg' | '180deg' | '270deg';
 
 const rotations: Degrees[] = ['0deg', '45deg', '90deg', '135deg', '180deg', '225deg', '270deg', '315deg'];
 const rotations90: Degrees90[] = ['0deg', '90deg', '180deg', '270deg']; // no multiples of 90
+
+const snapToGrid = (value: number): number => Math.round(value / 10) * 10;
+
+const createCSSEditFunc = (el: React.RefObject<HTMLDivElement>) =>
+  (attrib: any, value: number, unit: string = 'px') => (el.current!.style[attrib] = value + unit);
 
 const calculateNewCenterPos = (canvasPos: ClientRect, parentPos: ClientRect) => {
   const currLeft = parentPos.left - canvasPos.left;
@@ -43,8 +48,6 @@ class Box extends React.Component<TProps, TState> {
   private initialTableY: number = 0;
   private finalX: number = 0;
   private finalY: number = 0;
-  private prevX: number = 0;
-  private prevY: number = 0;
   private height: number = 100;
   private width: number = 100;
   private shouldRotate: boolean = false;
@@ -92,10 +95,6 @@ class Box extends React.Component<TProps, TState> {
   };
 
   startDrag = (clientX: number, clientY: number) => {
-    // Store the mouse position for use in the next iteration
-    this.prevX = clientX;
-    this.prevY = clientY;
-
     // Set the listener on the document as well so that the object is never lost
     document.onmousemove = this.continueDrag;
     document.onmouseup = this.mouseUp;
@@ -111,45 +110,51 @@ class Box extends React.Component<TProps, TState> {
 
     // The threshold for the rotation to stop if the table is moved
     // Rotate it if it's just nudged a little
-    if (Math.abs(this.initialMouseX - clientX) > ROTATION_THRESHOLD
-    || Math.abs(this.initialMouseY - clientY) > ROTATION_THRESHOLD) {
+    if (Math.abs(this.initialMouseX - clientX) > ROTATION_THRESHOLD ||
+      Math.abs(this.initialMouseY - clientY) > ROTATION_THRESHOLD) {
       this.shouldRotate = false;
     }
 
     // Calculate the mouse position change from the first click
-    // const canvasPos = this.props.canvasRef.current!.getBoundingClientRect();
-    const canvasRect = this.props.canvasRef.current!.getBoundingClientRect() as DOMRect;
+    // const canvasPos = this.props.floorplan.current!.getBoundingClientRect();
+    const canvasRect = this.props.floorplan.current!.getBoundingClientRect() as DOMRect;
     this.finalX = clientX - this.initialMouseX + this.initialTableX - canvasRect.left;
     this.finalY = clientY - this.initialMouseY + this.initialTableY - canvasRect.top;
 
     // Reposition the element
     const tableRect = this.element.current!.getBoundingClientRect() as DOMRect;
 
-    let top = this.finalY + 'px';
-    let left = this.finalX + 'px';
+    const moveTable = createCSSEditFunc(this.element);
 
     // Table pos, and keep sliding when out of bounds
-    if (this.finalX < canvasRect.width - tableRect.width&& this.finalY < canvasRect.height - tableRect.height && this.finalX > 0 && this.finalY > 0) {
-      this.element.current!.style.top = top;
-      this.element.current!.style.left = left;
+    if (this.finalX < canvasRect.width - tableRect.width && this.finalY < canvasRect.height - tableRect.height && this.finalX > 0 && this.finalY > 0) {
+      moveTable('top', snapToGrid(this.finalY));
+      moveTable('left', snapToGrid(this.finalX));
+
+      // Comments
     } else if (this.finalX < canvasRect.width - tableRect.width && this.finalX > 0) {
-      this.element.current!.style.left = left;
+      moveTable('left', snapToGrid(this.finalX));
+
+      // Comments
     } else if (this.finalY < canvasRect.height - tableRect.height && this.finalY > 0) {
-      this.element.current!.style.top = top;
+      moveTable('top', snapToGrid(this.finalY));
     }
 
     // Mouse pos, sets table to edge if mouse escapes
     if (this.finalX >= canvasRect.width + canvasRect.left) {
-      this.element.current!.style.left = canvasRect.width - tableRect.width + 'px';
+      moveTable('left', snapToGrid(canvasRect.width - tableRect.width));
     }
+    // Comments
     if (this.finalY >= canvasRect.height + canvasRect.top) {
-      this.element.current!.style.top = canvasRect.height - tableRect.height + 'px';
+      moveTable('top', snapToGrid(canvasRect.height - tableRect.height));
     }
+    // Comments
     if (this.finalX <= 0) {
-      this.element.current!.style.left = '0px';
+      moveTable('left', 0);
     }
+    // Comments
     if (this.finalY <= 0) {
-      this.element.current!.style.top = '0px';
+      moveTable('top', 0);
     }
   };
 
@@ -167,27 +172,35 @@ class Box extends React.Component<TProps, TState> {
 
     const { clientX, clientY } = e;
 
+    const canvasRect = this.props.floorplan.current!.getBoundingClientRect() as DOMRect;
     const parentPos = this.element.current!.getBoundingClientRect();
 
+    const resizeTable = createCSSEditFunc(this.element);
+
     // Calculate the new width and height based on the difference between the top/left and the position of the mouse at the bottom/right
-    if(clientX - parentPos.left <= MAX_SIZE[0]) {
-      this.element.current!.style.width = clientX - parentPos.left + 'px';
-    } else {
-      this.element.current!.style.width = MAX_SIZE[0] + 'px';
-    }
-      
-    if (clientY - parentPos.top <= MAX_SIZE[1]) {
-      this.element.current!.style.height = clientY - parentPos.top + 'px';
-    } else {
-      this.element.current!.style.height = MAX_SIZE[1] + 'px';
+    if (clientX <= canvasRect.width + canvasRect.left) {
+      if (clientX - parentPos.left <= TABLE_MAX_SIZE[0]) {
+        resizeTable('width', snapToGrid(clientX - parentPos.left));
+      } else {
+        resizeTable('width', TABLE_MAX_SIZE[0]);
+      }
     }
 
-    if(clientX - parentPos.left <= MIN_SIZE[0]) {
-      this.element.current!.style.width = MIN_SIZE[0] + 'px';
+    if (clientY <= canvasRect.height + canvasRect.top) {
+      if (clientY - parentPos.top <= TABLE_MAX_SIZE[1]) {
+        resizeTable('height', snapToGrid(clientY - parentPos.top));
+      } else {
+        resizeTable('height', TABLE_MAX_SIZE[1]);
+      }
     }
-      
-    if (clientY - parentPos.top <= MIN_SIZE[1]) {
-      this.element.current!.style.height = MIN_SIZE[1] + 'px';
+
+    if (clientX - parentPos.left <= TABLE_MIN_SIZE[0]) {
+      resizeTable('width', TABLE_MIN_SIZE[0]);
+
+    }
+
+    if (clientY - parentPos.top <= TABLE_MIN_SIZE[1]) {
+      resizeTable('height', TABLE_MIN_SIZE[1]);
     }
   };
 
@@ -208,7 +221,7 @@ class Box extends React.Component<TProps, TState> {
       tableStyle.transform = 'rotate(0deg)';
       tableDetailsStyle.transform = 'rotate(0deg)';
 
-      const canvasPos = this.props.canvasRef.current!.getBoundingClientRect();
+      const canvasPos = this.props.floorplan.current!.getBoundingClientRect();
 
       // Reverse the width and height
       parentStyle.width = parentPos.height + 'px';
