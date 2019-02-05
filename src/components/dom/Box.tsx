@@ -129,11 +129,11 @@ class Box extends React.Component<TProps, TState> {
       moveTable('top', snapToGrid(this.finalY));
       moveTable('left', snapToGrid(this.finalX));
 
-      // Comments
+      // TODO: Comments
     } else if (this.finalX < canvasRect.width - tableRect.width && this.finalX > 0) {
       moveTable('left', snapToGrid(this.finalX));
 
-      // Comments
+      // TODO: Comments
     } else if (this.finalY < canvasRect.height - tableRect.height && this.finalY > 0) {
       moveTable('top', snapToGrid(this.finalY));
     }
@@ -142,15 +142,15 @@ class Box extends React.Component<TProps, TState> {
     if (this.finalX >= canvasRect.width + canvasRect.left) {
       moveTable('left', snapToGrid(canvasRect.width - tableRect.width));
     }
-    // Comments
+    // TODO: Comments
     if (this.finalY >= canvasRect.height + canvasRect.top) {
       moveTable('top', snapToGrid(canvasRect.height - tableRect.height));
     }
-    // Comments
+    // TODO: Comments
     if (this.finalX <= 0) {
       moveTable('left', 0);
     }
-    // Comments
+    // TODO: Comments
     if (this.finalY <= 0) {
       moveTable('top', 0);
     }
@@ -184,6 +184,7 @@ class Box extends React.Component<TProps, TState> {
       }
     }
 
+    // TODO: Comment all of this
     if (clientY <= canvasRect.height + canvasRect.top) {
       if (clientY - parentPos.top <= TABLE_MAX_SIZE[1]) {
         resizeTable('height', snapToGrid(clientY - parentPos.top));
@@ -201,6 +202,7 @@ class Box extends React.Component<TProps, TState> {
     }
   };
 
+  // TODO: Check if any helper functions can be used instead
   rotate = () => {
     // Circularly iterate through the list of rotation degrees
     this.rotationIdx = (this.rotationIdx + 1) % rotations.length;
@@ -231,6 +233,7 @@ class Box extends React.Component<TProps, TState> {
 
       // Reposition parent element
 
+      // TODO: Comment
       moveTable('top', nextTop);
       moveTable('left', nextLeft);
       const newParentPos = this.element.current!.getBoundingClientRect();
