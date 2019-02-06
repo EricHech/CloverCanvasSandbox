@@ -114,7 +114,6 @@ class Box extends React.Component<TProps, TState> {
     }
 
     // Calculate the mouse position change from the first click
-    // const canvasPos = this.props.floorplan.current!.getBoundingClientRect();
     const canvasRect = this.props.floorplan.current!.getBoundingClientRect() as DOMRect;
     this.finalX = clientX - this.initialMouseX + this.initialTableX - canvasRect.left;
     this.finalY = clientY - this.initialMouseY + this.initialTableY - canvasRect.top;
@@ -129,11 +128,9 @@ class Box extends React.Component<TProps, TState> {
       moveTable('top', snapToGrid(this.finalY));
       moveTable('left', snapToGrid(this.finalX));
 
-      // TODO: Comments
+      // Check if the new position won't end up outside the boundaries
     } else if (this.finalX < canvasRect.width - tableRect.width && this.finalX > 0) {
       moveTable('left', snapToGrid(this.finalX));
-
-      // TODO: Comments
     } else if (this.finalY < canvasRect.height - tableRect.height && this.finalY > 0) {
       moveTable('top', snapToGrid(this.finalY));
     }
@@ -175,24 +172,29 @@ class Box extends React.Component<TProps, TState> {
 
     const resizeTable = createCSSEditFunc(this.element);
 
-    // Calculate the new width and height based on the difference between the top/left and the position of the mouse at the bottom/right
+    // Check if the new size would grow past the boundaries of the layout
     if (clientX <= canvasRect.width + canvasRect.left) {
+      // Check if the new size would be greater than the max
       if (clientX - parentPos.left <= TABLE_MAX_SIZE[0]) {
+        // Calculate the new width and height based on the difference between the top/left and the position of the mouse at the bottom/right
         resizeTable('width', snapToGrid(clientX - parentPos.left));
       } else {
         resizeTable('width', TABLE_MAX_SIZE[0]);
       }
     }
 
-    // TODO: Comment all of this
+    // Check if the new size would grow past the boundaries of the layout
     if (clientY <= canvasRect.height + canvasRect.top) {
+      // Check if the new size would be greater than the max
       if (clientY - parentPos.top <= TABLE_MAX_SIZE[1]) {
+        // Calculate the new width and height based on the difference between the top/left and the position of the mouse at the bottom/right
         resizeTable('height', snapToGrid(clientY - parentPos.top));
       } else {
         resizeTable('height', TABLE_MAX_SIZE[1]);
       }
     }
 
+    // Keep the tables above the minimum size
     if (clientX - parentPos.left <= TABLE_MIN_SIZE[0]) {
       resizeTable('width', TABLE_MIN_SIZE[0]);
     }
