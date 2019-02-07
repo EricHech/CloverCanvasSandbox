@@ -184,7 +184,11 @@ class Box extends React.Component<TProps, TState> {
         resizeTable('width', TABLE_MAX_SIZE[0]);
       }
     } else {
-      resizeTable('width', snapToGrid(canvasRect.left + canvasRect.width - containerPos.left));
+      if (canvasRect.left + canvasRect.width - containerPos.left < TABLE_MAX_SIZE[0]) {
+        resizeTable('width', snapToGrid(canvasRect.left + canvasRect.width - containerPos.left));
+      } else {
+        resizeTable('width', TABLE_MAX_SIZE[0]);
+      }
     }
 
     // Check if the new size would grow past the boundaries of the layout
@@ -197,7 +201,11 @@ class Box extends React.Component<TProps, TState> {
         resizeTable('height', TABLE_MAX_SIZE[1]);
       }
     } else {
-      resizeTable('height', snapToGrid(canvasRect.top + canvasRect.height - containerPos.top));
+      if (canvasRect.top + canvasRect.height - containerPos.top < TABLE_MAX_SIZE[1]) {
+        resizeTable('height', snapToGrid(canvasRect.top + canvasRect.height - containerPos.top));
+      } else {
+        resizeTable('height', TABLE_MAX_SIZE[1]);
+      }
     }
 
     // Keep the tables above the minimum size
