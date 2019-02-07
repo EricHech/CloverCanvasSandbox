@@ -13,10 +13,14 @@ type TProps = {
 
 const ROTATION_THRESHOLD = 5;
 
-// w / h
-const GRID = [150, 60];
-const TABLE_MAX_SIZE = [200, 200];
-const TABLE_MIN_SIZE = [50, 50];
+type size = {
+  width: number,
+  height: number,
+}
+
+const GRID: size = { width: 150, height: 60 };
+const TABLE_MAX_SIZE: size = { width: 200, height: 200 };
+const TABLE_MIN_SIZE: size = { width: 50, height: 50 };
 type Degrees = '0deg' | '45deg' | '90deg' | '135deg' | '180deg' | '225deg' | '270deg' | '315deg';
 type Degrees90 = '0deg' | '90deg' | '180deg' | '270deg';
 
@@ -90,46 +94,46 @@ const constrainResize = (canvasRect: ClientRect, containerRect: ClientRect, clie
   // Check if the new size would grow past the boundaries of the layout
   if (clientX <= canvasWidthWithOffset) {
     // Check if the new size would be greater than the max
-    if (containerResizeWidth <= TABLE_MAX_SIZE[0]) {
+    if (containerResizeWidth <= TABLE_MAX_SIZE.width) {
       // Calculate the new width and height based on the difference between the top/left and the position of the mouse at the bottom/right
       width = snapToGrid(containerResizeWidth);
     } else {
-      width = TABLE_MAX_SIZE[0];
+      width = TABLE_MAX_SIZE.width;
     }
   } else {
     // Grow until the table either hits the boundaries or its max size
-    if (containerAndCanvasBorderDiffWidth < TABLE_MAX_SIZE[0]) {
+    if (containerAndCanvasBorderDiffWidth < TABLE_MAX_SIZE.width) {
       width = snapToGrid(containerAndCanvasBorderDiffWidth);
     } else {
-      width = TABLE_MAX_SIZE[0];
+      width = TABLE_MAX_SIZE.width;
     }
   }
 
   // Check if the new size would grow past the boundaries of the layout
   if (clientY <= canvasHeightWithOffset) {
     // Check if the new size would be greater than the max
-    if (containerResizeHeight <= TABLE_MAX_SIZE[1]) {
+    if (containerResizeHeight <= TABLE_MAX_SIZE.height) {
       // Calculate the new width and height based on the difference between the top/left and the position of the mouse at the bottom/right
       height = snapToGrid(containerResizeHeight);
     } else {
-      height = TABLE_MAX_SIZE[1];
+      height = TABLE_MAX_SIZE.height;
     }
   } else {
     // Grow until the table either hits the boundaries or its max size
-    if (containerAndCanvasBorderDiffHeight < TABLE_MAX_SIZE[1]) {
+    if (containerAndCanvasBorderDiffHeight < TABLE_MAX_SIZE.height) {
       height = snapToGrid(containerAndCanvasBorderDiffHeight);
     } else {
-      height = TABLE_MAX_SIZE[1];
+      height = TABLE_MAX_SIZE.height;
     }
   }
 
   // Keep the tables above the minimum size
-  if (containerResizeWidth <= TABLE_MIN_SIZE[0]) {
-    width = TABLE_MIN_SIZE[0];
+  if (containerResizeWidth <= TABLE_MIN_SIZE.width) {
+    width = TABLE_MIN_SIZE.width;
   }
 
-  if (containerResizeHeight <= TABLE_MIN_SIZE[1]) {
-    height = TABLE_MIN_SIZE[1];
+  if (containerResizeHeight <= TABLE_MIN_SIZE.height) {
+    height = TABLE_MIN_SIZE.height;
   }
 
   return { height, width };
@@ -139,10 +143,10 @@ const constrainRotate = (canvasRect: ClientRect, width: number, height: number, 
   let top = nextTop;
   let left = nextLeft;
 
-  if (nextTop + height > canvasRect.height) {
+  if (nextTop + height > canvasRect.height + canvasRect.top) {
     top = snapToGrid(canvasRect.height - height);
   }
-  if (nextLeft + width > canvasRect.width) {
+  if (nextLeft + width > canvasRect.width + canvasRect.left) {
     left = snapToGrid(canvasRect.width - width);
   }
   if (nextTop - canvasRect.top < 0) {
@@ -288,7 +292,7 @@ class Box extends React.Component<TProps, TState> {
       adjustTable('transform', 'rotate(0deg)', '');
       adjustTableDetails('transform', 'rotate(0deg)', '');
 
-      const canvasRect = this.props.floorplan.current!.getBoundingClientRect() as DOMRect;
+      const canvasRect = this.props.floorplan.current!.getBoundingClientRect();
 
       // Reverse the width and height
       adjustContainer('width', containerRect.height);
@@ -298,13 +302,24 @@ class Box extends React.Component<TProps, TState> {
       const { nextLeft, nextTop } = calculateNewCenterPos(canvasRect, containerRect);
 
       // Reposition parent element
-      const newWidth = containerRect.height;
-      const newHeight = containerRect.width;
 
-      const { top , left } = constrainRotate(canvasRect, newWidth, newHeight, nextTop, nextLeft);
+      // TODO: Comment
+      adjustContainer('top', snapToGrid(nextTop));
+      adjustContainer('left', snapToGrid(nextLeft));
+      const newContainerPos = this.element.current!.getBoundingClientRect();
 
-      adjustContainer('top', snapToGrid(top));
-      adjustContainer('left', snapToGrid(left));
+      if (newContainerPos.top + newContainerPos.height > canvasRect.height + canvasRect.top) {
+        adjustContainer('top', snapToGrid(canvasRect.height - newContainerPos.height));
+      }
+      if (newContainerPos.left + newContainerPos.width > canvasRect.width + canvasRect.left) {
+        adjustContainer('left', snapToGrid(canvasRect.width - newContainerPos.width));
+      }
+      if (newContainerPos.top - canvasRect.top < 0) {
+        adjustContainer('top', 0);
+      }
+      if (newContainerPos.left - canvasRect.left < 0) {
+        adjustContainer('left', 0);
+      }
 
     } else {
       // If you resize a table from a skyscraper shape to a bridge, the rotations need to invert as well.
