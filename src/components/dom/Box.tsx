@@ -38,34 +38,37 @@ const calculateNewCenterPos = (canvasRect: ClientRect, parentPos: ClientRect) =>
   return { nextLeft, nextTop };
 };
 
-const constrainDrag = (canvasRect: ClientRect, containerRect: ClientRect, finalX: number, finalY: number): { top: number, left: number } => {
+const constrainDrag = (canvasRect: ClientRect, containerRect: ClientRect, relativeX: number, relativeY: number): { top: number, left: number } => {
   let top = 0;
   let left = 0;
 
+  const relativeWidth = canvasRect.width - containerRect.width;
+  const relativeHeight = canvasRect.height - containerRect.height;
+
   // Table pos, and keep sliding when out of bounds
-  if (finalX < canvasRect.width - containerRect.width && finalY < canvasRect.height - containerRect.height && finalX > 0 && finalY > 0) {
-    top = snapToGrid(finalY);
-    left = snapToGrid(finalX);
+  if (relativeX < relativeWidth && relativeY < relativeHeight && relativeX > 0 && relativeY > 0) {
+    top = snapToGrid(relativeY);
+    left = snapToGrid(relativeX);
 
     // Check if the new position won't end up outside the boundaries
-  } else if (finalX < canvasRect.width - containerRect.width && finalX > 0) {
-    left = snapToGrid(finalX);
+  } else if (relativeX < relativeWidth && relativeX > 0) {
+    left = snapToGrid(relativeX);
 
-  } else if (finalY < canvasRect.height - containerRect.height && finalY > 0) {
-    top = snapToGrid(finalY);
+  } else if (relativeY < relativeHeight && relativeY > 0) {
+    top = snapToGrid(relativeY);
   }
 
   // Mouse pos, sets table to edge if mouse escapes
-  if (finalX >= canvasRect.width - containerRect.width) {
-    left = snapToGrid(canvasRect.width - containerRect.width);
+  if (relativeX >= relativeWidth) {
+    left = snapToGrid(relativeWidth);
   }
-  if (finalY >= canvasRect.height - containerRect.height) {
-    top = snapToGrid(canvasRect.height - containerRect.height);
+  if (relativeY >= relativeHeight) {
+    top = snapToGrid(relativeHeight);
   }
-  if (finalX <= 0) {
+  if (relativeX <= 0) {
     left = 0;
   }
-  if (finalY <= 0) {
+  if (relativeY <= 0) {
     top = 0;
   }
 
@@ -76,48 +79,56 @@ const constrainResize = (canvasRect: ClientRect, containerRect: ClientRect, clie
   let width = 0;
   let height = 0;
 
+  const canvasWidthWithOffset = canvasRect.width + canvasRect.left;
+  const containerResizeWidth = clientX - containerRect.left;
+  const containerAndCanvasBorderDiffWidth = canvasWidthWithOffset - containerRect.left;
+  
+  const canvasHeightWithOffset = canvasRect.height + canvasRect.top;
+  const containerResizeHeight = clientY - containerRect.top;
+  const containerAndCanvasBorderDiffHeight = canvasHeightWithOffset - containerRect.top;
+
   // Check if the new size would grow past the boundaries of the layout
-  if (clientX <= canvasRect.width + canvasRect.left) {
+  if (clientX <= canvasWidthWithOffset) {
     // Check if the new size would be greater than the max
-    if (clientX - containerRect.left <= TABLE_MAX_SIZE[0]) {
+    if (containerResizeWidth <= TABLE_MAX_SIZE[0]) {
       // Calculate the new width and height based on the difference between the top/left and the position of the mouse at the bottom/right
-      width = snapToGrid(clientX - containerRect.left);
+      width = snapToGrid(containerResizeWidth);
     } else {
       width = TABLE_MAX_SIZE[0];
     }
   } else {
     // Grow until the table either hits the boundaries or its max size
-    if (canvasRect.left + canvasRect.width - containerRect.left < TABLE_MAX_SIZE[0]) {
-      width = snapToGrid(canvasRect.left + canvasRect.width - containerRect.left);
+    if (containerAndCanvasBorderDiffWidth < TABLE_MAX_SIZE[0]) {
+      width = snapToGrid(containerAndCanvasBorderDiffWidth);
     } else {
       width = TABLE_MAX_SIZE[0];
     }
   }
 
   // Check if the new size would grow past the boundaries of the layout
-  if (clientY <= canvasRect.height + canvasRect.top) {
+  if (clientY <= canvasHeightWithOffset) {
     // Check if the new size would be greater than the max
-    if (clientY - containerRect.top <= TABLE_MAX_SIZE[1]) {
+    if (containerResizeHeight <= TABLE_MAX_SIZE[1]) {
       // Calculate the new width and height based on the difference between the top/left and the position of the mouse at the bottom/right
-      height = snapToGrid(clientY - containerRect.top);
+      height = snapToGrid(containerResizeHeight);
     } else {
       height = TABLE_MAX_SIZE[1];
     }
   } else {
     // Grow until the table either hits the boundaries or its max size
-    if (canvasRect.top + canvasRect.height - containerRect.top < TABLE_MAX_SIZE[1]) {
-      height = snapToGrid(canvasRect.top + canvasRect.height - containerRect.top);
+    if (containerAndCanvasBorderDiffHeight < TABLE_MAX_SIZE[1]) {
+      height = snapToGrid(containerAndCanvasBorderDiffHeight);
     } else {
       height = TABLE_MAX_SIZE[1];
     }
   }
 
   // Keep the tables above the minimum size
-  if (clientX - containerRect.left <= TABLE_MIN_SIZE[0]) {
+  if (containerResizeWidth <= TABLE_MIN_SIZE[0]) {
     width = TABLE_MIN_SIZE[0];
   }
 
-  if (clientY - containerRect.top <= TABLE_MIN_SIZE[1]) {
+  if (containerResizeHeight <= TABLE_MIN_SIZE[1]) {
     height = TABLE_MIN_SIZE[1];
   }
 
@@ -220,13 +231,13 @@ class Box extends React.Component<TProps, TState> {
     const containerRect = this.element.current!.getBoundingClientRect() as DOMRect;
     
     // Calculate the mouse position change from the first click
-    const finalX = clientX - this.initialMouseX + this.initialTableX - canvasRect.left;
-    const finalY = clientY - this.initialMouseY + this.initialTableY - canvasRect.top;
+    const relativeX = clientX - this.initialMouseX + this.initialTableX - canvasRect.left;
+    const relativeY = clientY - this.initialMouseY + this.initialTableY - canvasRect.top;
 
     
     const moveTable = createCSSEditFunc(this.element);
     
-    const { top , left } = constrainDrag(canvasRect, containerRect, finalX, finalY);
+    const { top , left } = constrainDrag(canvasRect, containerRect, relativeX, relativeY);
     
     // Reposition the element
     moveTable('top', top);
