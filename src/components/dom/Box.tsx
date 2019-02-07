@@ -143,16 +143,16 @@ const constrainRotate = (canvasRect: ClientRect, width: number, height: number, 
   let top = nextTop;
   let left = nextLeft;
 
-  if (nextTop + height > canvasRect.height + canvasRect.top) {
+  if (nextTop + canvasRect.top + height > canvasRect.height + canvasRect.top) {
     top = snapToGrid(canvasRect.height - height);
   }
-  if (nextLeft + width > canvasRect.width + canvasRect.left) {
+  if (nextLeft + canvasRect.left + width > canvasRect.width + canvasRect.left) {
     left = snapToGrid(canvasRect.width - width);
   }
-  if (nextTop - canvasRect.top < 0) {
+  if (nextTop + canvasRect.top - canvasRect.top < 0) {
     top = 0;
   }
-  if (nextLeft - canvasRect.left < 0) {
+  if (nextLeft + canvasRect.left - canvasRect.left < 0) {
     left = 0;
   }
 
@@ -302,24 +302,13 @@ class Box extends React.Component<TProps, TState> {
       const { nextLeft, nextTop } = calculateNewCenterPos(canvasRect, containerRect);
 
       // Reposition parent element
+      const switchWidtd = containerRect.height;
+      const switchdHite = containerRect.width;
 
-      // TODO: Comment
-      adjustContainer('top', snapToGrid(nextTop));
-      adjustContainer('left', snapToGrid(nextLeft));
-      const newContainerPos = this.element.current!.getBoundingClientRect();
+      const { top, left } = constrainRotate(canvasRect, switchWidtd, switchdHite, nextTop, nextLeft);
 
-      if (newContainerPos.top + newContainerPos.height > canvasRect.height + canvasRect.top) {
-        adjustContainer('top', snapToGrid(canvasRect.height - newContainerPos.height));
-      }
-      if (newContainerPos.left + newContainerPos.width > canvasRect.width + canvasRect.left) {
-        adjustContainer('left', snapToGrid(canvasRect.width - newContainerPos.width));
-      }
-      if (newContainerPos.top - canvasRect.top < 0) {
-        adjustContainer('top', 0);
-      }
-      if (newContainerPos.left - canvasRect.left < 0) {
-        adjustContainer('left', 0);
-      }
+      adjustContainer('top', top);
+      adjustContainer('left', left);
 
     } else {
       // If you resize a table from a skyscraper shape to a bridge, the rotations need to invert as well.
