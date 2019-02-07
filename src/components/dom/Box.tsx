@@ -139,20 +139,16 @@ const constrainResize = (canvasRect: ClientRect, containerRect: ClientRect, clie
   return { height, width };
 }
 
-const constrainRotate = (canvasRect: ClientRect, width: number, height: number, nextTop: number, nextLeft: number): { top: number, left: number } => {
-  let top = nextTop;
-  let left = nextLeft;
-
-  if (nextTop + canvasRect.top + height > canvasRect.height + canvasRect.top) {
+const constrainRotate = (canvasRect: ClientRect, width: number, height: number, top: number, left: number): { top: number, left: number } => {
+  if (top + height > canvasRect.height) {
     top = snapToGrid(canvasRect.height - height);
-  }
-  if (nextLeft + canvasRect.left + width > canvasRect.width + canvasRect.left) {
-    left = snapToGrid(canvasRect.width - width);
-  }
-  if (nextTop + canvasRect.top - canvasRect.top < 0) {
+  } else if (top < 0) {
     top = 0;
-  }
-  if (nextLeft + canvasRect.left - canvasRect.left < 0) {
+  } 
+
+  if (left + width > canvasRect.width) {
+    left = snapToGrid(canvasRect.width - width);
+  } else if (left < 0) {
     left = 0;
   }
 
@@ -302,10 +298,10 @@ class Box extends React.Component<TProps, TState> {
       const { nextLeft, nextTop } = calculateNewCenterPos(canvasRect, containerRect);
 
       // Reposition parent element
-      const switchWidtd = containerRect.height;
-      const switchdHite = containerRect.width;
+      const nextWidth = containerRect.height;
+      const nextHeight = containerRect.width;
 
-      const { top, left } = constrainRotate(canvasRect, switchWidtd, switchdHite, nextTop, nextLeft);
+      const { top, left } = constrainRotate(canvasRect, nextWidth, nextHeight, nextTop, nextLeft);
 
       adjustContainer('top', top);
       adjustContainer('left', left);
