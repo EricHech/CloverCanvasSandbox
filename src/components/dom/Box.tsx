@@ -137,12 +137,11 @@ class Box extends React.Component<TProps, TState> {
     }
 
     // Mouse pos, sets table to edge if mouse escapes
-    console.log(this.finalX, canvasRect.width)
-    if (this.finalX >= canvasRect.width) {
+    if (this.finalX >= canvasRect.width - containerPos.width) {
       moveTable('left', snapToGrid(canvasRect.width - containerPos.width));
     }
     // TODO: Comments
-    if (this.finalY >= canvasRect.height) {
+    if (this.finalY >= canvasRect.height - containerPos.height) {
       moveTable('top', snapToGrid(canvasRect.height - containerPos.height));
     }
     // TODO: Comments
