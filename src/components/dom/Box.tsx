@@ -137,11 +137,11 @@ class Box extends React.Component<TProps, TState> {
     }
 
     // Mouse pos, sets table to edge if mouse escapes
-    if (this.finalX >= canvasRect.width + canvasRect.left) {
+    if (this.finalX >= canvasRect.width - canvasRect.left) {
       moveTable('left', snapToGrid(canvasRect.width - containerPos.width));
     }
     // TODO: Comments
-    if (this.finalY >= canvasRect.height + canvasRect.top) {
+    if (this.finalY >= canvasRect.height - canvasRect.top) {
       moveTable('top', snapToGrid(canvasRect.height - containerPos.height));
     }
     // TODO: Comments
@@ -221,8 +221,8 @@ class Box extends React.Component<TProps, TState> {
 
     if (rotations90.includes(currentRotation as Degrees90)) {
       // Reset the css transforms because 90 degree rotations are handled by swapping the width and height
-      adjustTable('transform', 'rotate(0deg)', '')
-      adjustTableDetails('transform', 'rotate(0deg)', '')
+      adjustTable('transform', 'rotate(0deg)', '');
+      adjustTableDetails('transform', 'rotate(0deg)', '');
 
       const canvasRect = this.props.floorplan.current!.getBoundingClientRect() as DOMRect;
 
@@ -263,9 +263,9 @@ class Box extends React.Component<TProps, TState> {
       }
 
       // Rotate the table
-      adjustTable('transform', `rotate(${clockwise ? '' : '-'}${currentRotation})`, '')
+      adjustTable('transform', `rotate(${clockwise ? '' : '-'}${currentRotation})`, '');
       // The table details need to rotate opposite the table to stay aligned
-      adjustTableDetails('transform', `rotate(${clockwise ? '-' : ''}${currentRotation})`, '')
+      adjustTableDetails('transform', `rotate(${clockwise ? '-' : ''}${currentRotation})`, '');
     }
   };
 
