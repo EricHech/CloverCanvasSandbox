@@ -1,4 +1,4 @@
-import React, { RefObject } from 'react';
+import React from 'react';
 
 type TState = {
   id: string | null;
@@ -38,18 +38,120 @@ const calculateNewCenterPos = (canvasRect: ClientRect, parentPos: ClientRect) =>
   return { nextLeft, nextTop };
 };
 
+const constrainDrag = (canvasRect: ClientRect, containerRect: ClientRect, finalX: number, finalY: number): { top: number, left: number } => {
+  let top = 0;
+  let left = 0;
+
+  // Table pos, and keep sliding when out of bounds
+  if (finalX < canvasRect.width - containerRect.width && finalY < canvasRect.height - containerRect.height && finalX > 0 && finalY > 0) {
+    top = snapToGrid(finalY);
+    left = snapToGrid(finalX);
+
+    // Check if the new position won't end up outside the boundaries
+  } else if (finalX < canvasRect.width - containerRect.width && finalX > 0) {
+    left = snapToGrid(finalX);
+
+  } else if (finalY < canvasRect.height - containerRect.height && finalY > 0) {
+    top = snapToGrid(finalY);
+  }
+
+  // Mouse pos, sets table to edge if mouse escapes
+  if (finalX >= canvasRect.width - containerRect.width) {
+    left = snapToGrid(canvasRect.width - containerRect.width);
+  }
+  if (finalY >= canvasRect.height - containerRect.height) {
+    top = snapToGrid(canvasRect.height - containerRect.height);
+  }
+  if (finalX <= 0) {
+    left = 0;
+  }
+  if (finalY <= 0) {
+    top = 0;
+  }
+
+  return { top, left };
+}
+
+const constrainResize = (canvasRect: ClientRect, containerRect: ClientRect, clientX: number, clientY: number): { height: number, width: number } => {
+  let width = 0;
+  let height = 0;
+
+  // Check if the new size would grow past the boundaries of the layout
+  if (clientX <= canvasRect.width + canvasRect.left) {
+    // Check if the new size would be greater than the max
+    if (clientX - containerRect.left <= TABLE_MAX_SIZE[0]) {
+      // Calculate the new width and height based on the difference between the top/left and the position of the mouse at the bottom/right
+      width = snapToGrid(clientX - containerRect.left);
+    } else {
+      width = TABLE_MAX_SIZE[0];
+    }
+  } else {
+    // Grow until the table either hits the boundaries or its max size
+    if (canvasRect.left + canvasRect.width - containerRect.left < TABLE_MAX_SIZE[0]) {
+      width = snapToGrid(canvasRect.left + canvasRect.width - containerRect.left);
+    } else {
+      width = TABLE_MAX_SIZE[0];
+    }
+  }
+
+  // Check if the new size would grow past the boundaries of the layout
+  if (clientY <= canvasRect.height + canvasRect.top) {
+    // Check if the new size would be greater than the max
+    if (clientY - containerRect.top <= TABLE_MAX_SIZE[1]) {
+      // Calculate the new width and height based on the difference between the top/left and the position of the mouse at the bottom/right
+      height = snapToGrid(clientY - containerRect.top);
+    } else {
+      height = TABLE_MAX_SIZE[1];
+    }
+  } else {
+    // Grow until the table either hits the boundaries or its max size
+    if (canvasRect.top + canvasRect.height - containerRect.top < TABLE_MAX_SIZE[1]) {
+      height = snapToGrid(canvasRect.top + canvasRect.height - containerRect.top);
+    } else {
+      height = TABLE_MAX_SIZE[1];
+    }
+  }
+
+  // Keep the tables above the minimum size
+  if (clientX - containerRect.left <= TABLE_MIN_SIZE[0]) {
+    width = TABLE_MIN_SIZE[0];
+  }
+
+  if (clientY - containerRect.top <= TABLE_MIN_SIZE[1]) {
+    height = TABLE_MIN_SIZE[1];
+  }
+
+  return { height, width };
+}
+
+const constrainRotate = (canvasRect: ClientRect, width: number, height: number, nextTop: number, nextLeft: number): { top: number, left: number } => {
+  let top = nextTop;
+  let left = nextLeft;
+
+  if (nextTop + height > canvasRect.height) {
+    top = snapToGrid(canvasRect.height - height);
+  }
+  if (nextLeft + width > canvasRect.width) {
+    left = snapToGrid(canvasRect.width - width);
+  }
+  if (nextTop - canvasRect.top < 0) {
+    top = 0;
+  }
+  if (nextLeft - canvasRect.left < 0) {
+    left = 0;
+  }
+
+  return { top, left };
+}
+
 class Box extends React.Component<TProps, TState> {
-  private element = React.createRef<HTMLDivElement>();
-  private table = React.createRef<HTMLDivElement>();
-  private tableDetails = React.createRef<HTMLDivElement>();
+  private element: React.RefObject<HTMLDivElement> = React.createRef();
+  private table: React.RefObject<HTMLDivElement> = React.createRef();
+  private tableDetails: React.RefObject<HTMLDivElement> = React.createRef();
   private initialMouseX: number = 0;
   private initialMouseY: number = 0;
   private initialTableX: number = 0;
   private initialTableY: number = 0;
-  private finalX: number = 0;
-  private finalY: number = 0;
-  private height: number = 100;
-  private width: number = 100;
   private shouldRotate: boolean = false;
   private dragging: boolean = false;
   private rotationIdx: number = 0;
@@ -114,44 +216,21 @@ class Box extends React.Component<TProps, TState> {
       this.shouldRotate = false;
     }
 
-    // Calculate the mouse position change from the first click
     const canvasRect = this.props.floorplan.current!.getBoundingClientRect() as DOMRect;
-    this.finalX = clientX - this.initialMouseX + this.initialTableX - canvasRect.left;
-    this.finalY = clientY - this.initialMouseY + this.initialTableY - canvasRect.top;
+    const containerRect = this.element.current!.getBoundingClientRect() as DOMRect;
+    
+    // Calculate the mouse position change from the first click
+    const finalX = clientX - this.initialMouseX + this.initialTableX - canvasRect.left;
+    const finalY = clientY - this.initialMouseY + this.initialTableY - canvasRect.top;
 
-    // Reposition the element
-    const containerPos = this.element.current!.getBoundingClientRect() as DOMRect;
-
+    
     const moveTable = createCSSEditFunc(this.element);
-
-    // Table pos, and keep sliding when out of bounds
-    if (this.finalX < canvasRect.width - containerPos.width && this.finalY < canvasRect.height - containerPos.height && this.finalX > 0 && this.finalY > 0) {
-      moveTable('top', snapToGrid(this.finalY));
-      moveTable('left', snapToGrid(this.finalX));
-
-      // Check if the new position won't end up outside the boundaries
-    } else if (this.finalX < canvasRect.width - containerPos.width && this.finalX > 0) {
-      moveTable('left', snapToGrid(this.finalX));
-    } else if (this.finalY < canvasRect.height - containerPos.height && this.finalY > 0) {
-      moveTable('top', snapToGrid(this.finalY));
-    }
-
-    // Mouse pos, sets table to edge if mouse escapes
-    if (this.finalX >= canvasRect.width - containerPos.width) {
-      moveTable('left', snapToGrid(canvasRect.width - containerPos.width));
-    }
-    // TODO: Comments
-    if (this.finalY >= canvasRect.height - containerPos.height) {
-      moveTable('top', snapToGrid(canvasRect.height - containerPos.height));
-    }
-    // TODO: Comments
-    if (this.finalX <= 0) {
-      moveTable('left', 0);
-    }
-    // TODO: Comments
-    if (this.finalY <= 0) {
-      moveTable('top', 0);
-    }
+    
+    const { top , left } = constrainDrag(canvasRect, containerRect, finalX, finalY);
+    
+    // Reposition the element
+    moveTable('top', top);
+    moveTable('left', left);
   };
 
   startResize = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -169,54 +248,14 @@ class Box extends React.Component<TProps, TState> {
     const { clientX, clientY } = e;
 
     const canvasRect = this.props.floorplan.current!.getBoundingClientRect() as DOMRect;
-    const containerPos = this.element.current!.getBoundingClientRect();
+    const containerRect = this.element.current!.getBoundingClientRect();
 
     const resizeTable = createCSSEditFunc(this.element);
 
-    // Check if the new size would grow past the boundaries of the layout
-    if (clientX <= canvasRect.width + canvasRect.left) {
-      // Check if the new size would be greater than the max
-      if (clientX - containerPos.left <= TABLE_MAX_SIZE[0]) {
-        // Calculate the new width and height based on the difference between the top/left and the position of the mouse at the bottom/right
-        resizeTable('width', snapToGrid(clientX - containerPos.left));
-      } else {
-        resizeTable('width', TABLE_MAX_SIZE[0]);
-      }
-    } else {
-      // Grow until the table either hits the boundaries or its max size
-      if (canvasRect.left + canvasRect.width - containerPos.left < TABLE_MAX_SIZE[0]) {
-        resizeTable('width', snapToGrid(canvasRect.left + canvasRect.width - containerPos.left));
-      } else {
-        resizeTable('width', TABLE_MAX_SIZE[0]);
-      }
-    }
+    const { height, width } = constrainResize(canvasRect, containerRect, clientX, clientY);
 
-    // Check if the new size would grow past the boundaries of the layout
-    if (clientY <= canvasRect.height + canvasRect.top) {
-      // Check if the new size would be greater than the max
-      if (clientY - containerPos.top <= TABLE_MAX_SIZE[1]) {
-        // Calculate the new width and height based on the difference between the top/left and the position of the mouse at the bottom/right
-        resizeTable('height', snapToGrid(clientY - containerPos.top));
-      } else {
-        resizeTable('height', TABLE_MAX_SIZE[1]);
-      }
-    } else {
-      // Grow until the table either hits the boundaries or its max size
-      if (canvasRect.top + canvasRect.height - containerPos.top < TABLE_MAX_SIZE[1]) {
-        resizeTable('height', snapToGrid(canvasRect.top + canvasRect.height - containerPos.top));
-      } else {
-        resizeTable('height', TABLE_MAX_SIZE[1]);
-      }
-    }
-
-    // Keep the tables above the minimum size
-    if (clientX - containerPos.left <= TABLE_MIN_SIZE[0]) {
-      resizeTable('width', TABLE_MIN_SIZE[0]);
-    }
-
-    if (clientY - containerPos.top <= TABLE_MIN_SIZE[1]) {
-      resizeTable('height', TABLE_MIN_SIZE[1]);
-    }
+    resizeTable('height', height);
+    resizeTable('width', width);
   };
 
   // TODO: Check if any helper functions can be used instead
@@ -226,7 +265,7 @@ class Box extends React.Component<TProps, TState> {
     this.forceUpdate();
     this.shouldRotate = false;
 
-    const containerPos = this.element.current!.getBoundingClientRect();
+    const containerRect = this.element.current!.getBoundingClientRect();
     const currentRotation = rotations[this.rotationIdx];
 
     const adjustContainer = createCSSEditFunc(this.element);
@@ -241,31 +280,21 @@ class Box extends React.Component<TProps, TState> {
       const canvasRect = this.props.floorplan.current!.getBoundingClientRect() as DOMRect;
 
       // Reverse the width and height
-      adjustContainer('width', containerPos.height);
-      adjustContainer('height', containerPos.width);
+      adjustContainer('width', containerRect.height);
+      adjustContainer('height', containerRect.width);
 
       // Because the rotation is anchored to the top/left, we shift that position to visually maintain the same center point
-      const { nextLeft, nextTop } = calculateNewCenterPos(canvasRect, containerPos);
+      const { nextLeft, nextTop } = calculateNewCenterPos(canvasRect, containerRect);
 
       // Reposition parent element
+      const newWidth = containerRect.height;
+      const newHeight = containerRect.width;
 
-      // TODO: Comment
-      adjustContainer('top', snapToGrid(nextTop));
-      adjustContainer('left', snapToGrid(nextLeft));
-      const newContainerPos = this.element.current!.getBoundingClientRect();
+      const { top , left } = constrainRotate(canvasRect, newWidth, newHeight, nextTop, nextLeft);
 
-      if (newContainerPos.top + newContainerPos.height > canvasRect.height + canvasRect.top) {
-        adjustContainer('top', snapToGrid(canvasRect.height - newContainerPos.height));
-      }
-      if (newContainerPos.left + newContainerPos.width > canvasRect.width + canvasRect.left) {
-        adjustContainer('left', snapToGrid(canvasRect.width - newContainerPos.width));
-      }
-      if (newContainerPos.top - canvasRect.top < 0) {
-        adjustContainer('top', 0);
-      }
-      if (newContainerPos.left - canvasRect.left < 0) {
-        adjustContainer('left', 0);
-      }
+      adjustContainer('top', snapToGrid(top));
+      adjustContainer('left', snapToGrid(left));
+
     } else {
       // If you resize a table from a skyscraper shape to a bridge, the rotations need to invert as well.
       // If the table is diagonal, check the current orientation and rotate it the correct way.
@@ -289,7 +318,7 @@ class Box extends React.Component<TProps, TState> {
 
     const rotation = rotations[this.rotationIdx];
     return (
-      <div ref={this.element} id={name} onMouseDown={this.mouseDown} className="element" style={{ zIndex: this.dragging ? highestIdx : idx, width: `${this.width}px`, height: `${this.height}px` }}>
+      <div ref={this.element} id={name} onMouseDown={this.mouseDown} className="element" style={{ zIndex: this.dragging ? highestIdx : idx }}>
         <div ref={this.table} className="table">
           <div ref={this.tableDetails} className="table-details">
             {name}
