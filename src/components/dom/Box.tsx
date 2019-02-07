@@ -174,6 +174,7 @@ class Box extends React.Component<TProps, TState> {
     const resizeTable = createCSSEditFunc(this.element);
 
     // Check if the new size would grow past the boundaries of the layout
+    console.log(clientX, canvasRect.width + canvasRect.left);
     if (clientX <= canvasRect.width + canvasRect.left) {
       // Check if the new size would be greater than the max
       if (clientX - containerPos.left <= TABLE_MAX_SIZE[0]) {
@@ -182,6 +183,8 @@ class Box extends React.Component<TProps, TState> {
       } else {
         resizeTable('width', TABLE_MAX_SIZE[0]);
       }
+    } else {
+      resizeTable('width', snapToGrid(canvasRect.left + canvasRect.width - containerPos.left));
     }
 
     // Check if the new size would grow past the boundaries of the layout
@@ -193,6 +196,8 @@ class Box extends React.Component<TProps, TState> {
       } else {
         resizeTable('height', TABLE_MAX_SIZE[1]);
       }
+    } else {
+      resizeTable('height', snapToGrid(canvasRect.top + canvasRect.height - containerPos.top));
     }
 
     // Keep the tables above the minimum size
