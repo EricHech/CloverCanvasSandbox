@@ -48,23 +48,23 @@ const constrainDrag = (canvasRect: ClientRect, containerRect: ClientRect, relati
 
   // Table pos, and keep sliding when out of bounds
   if (relativeX < relativeWidth && relativeY < relativeHeight && relativeX > 0 && relativeY > 0) {
-    top = snapToGrid(relativeY);
-    left = snapToGrid(relativeX);
+    top = relativeY;
+    left = relativeX;
 
     // Check if the new position won't end up outside the boundaries
   } else if (relativeX < relativeWidth && relativeX > 0) {
-    left = snapToGrid(relativeX);
+    left = relativeX;
 
   } else if (relativeY < relativeHeight && relativeY > 0) {
-    top = snapToGrid(relativeY);
+    top = relativeY;
   }
 
   // Mouse pos, sets table to edge if mouse escapes
   if (relativeX >= relativeWidth) {
-    left = snapToGrid(relativeWidth);
+    left = relativeWidth;
   }
   if (relativeY >= relativeHeight) {
-    top = snapToGrid(relativeHeight);
+    top = relativeHeight;
   }
   if (relativeX <= 0) {
     left = 0;
@@ -73,7 +73,7 @@ const constrainDrag = (canvasRect: ClientRect, containerRect: ClientRect, relati
     top = 0;
   }
 
-  return { top, left };
+  return { top: snapToGrid(top), left: snapToGrid(left) };
 }
 
 const constrainResize = (canvasRect: ClientRect, containerRect: ClientRect, clientX: number, clientY: number): { height: number, width: number } => {
@@ -93,14 +93,14 @@ const constrainResize = (canvasRect: ClientRect, containerRect: ClientRect, clie
     // Check if the new size would be greater than the max
     if (containerResizeWidth <= TABLE_MAX_SIZE.width) {
       // Calculate the new width and height based on the difference between the top/left and the position of the mouse at the bottom/right
-      width = snapToGrid(containerResizeWidth);
+      width = containerResizeWidth;
     } else {
       width = TABLE_MAX_SIZE.width;
     }
   } else {
     // Grow until the table either hits the boundaries or its max size
     if (containerAndCanvasBorderDiffWidth < TABLE_MAX_SIZE.width) {
-      width = snapToGrid(containerAndCanvasBorderDiffWidth);
+      width = containerAndCanvasBorderDiffWidth;
     } else {
       width = TABLE_MAX_SIZE.width;
     }
@@ -111,14 +111,14 @@ const constrainResize = (canvasRect: ClientRect, containerRect: ClientRect, clie
     // Check if the new size would be greater than the max
     if (containerResizeHeight <= TABLE_MAX_SIZE.height) {
       // Calculate the new width and height based on the difference between the top/left and the position of the mouse at the bottom/right
-      height = snapToGrid(containerResizeHeight);
+      height = containerResizeHeight;
     } else {
       height = TABLE_MAX_SIZE.height;
     }
   } else {
     // Grow until the table either hits the boundaries or its max size
     if (containerAndCanvasBorderDiffHeight < TABLE_MAX_SIZE.height) {
-      height = snapToGrid(containerAndCanvasBorderDiffHeight);
+      height = containerAndCanvasBorderDiffHeight;
     } else {
       height = TABLE_MAX_SIZE.height;
     }
@@ -133,23 +133,23 @@ const constrainResize = (canvasRect: ClientRect, containerRect: ClientRect, clie
     height = TABLE_MIN_SIZE.height;
   }
 
-  return { height, width };
+  return { height: snapToGrid(height), width: snapToGrid(width) };
 }
 
 const constrainRotate = (canvasRect: ClientRect, width: number, height: number, top: number, left: number): { top: number, left: number } => {
   if (top + height > canvasRect.height) {
-    top = snapToGrid(canvasRect.height - height);
+    top = canvasRect.height - height;
   } else if (top < 0) {
     top = 0;
   } 
 
   if (left + width > canvasRect.width) {
-    left = snapToGrid(canvasRect.width - width);
+    left = canvasRect.width - width;
   } else if (left < 0) {
     left = 0;
   }
 
-  return { top, left };
+  return { top: snapToGrid(top), left: snapToGrid(left) };
 }
 
 class Box extends React.Component<TProps> {
