@@ -1,11 +1,12 @@
 import React from 'react';
 import Box from './Box';
 
+// move to config file
 const colors = ['red', 'orange', 'yellow', 'green', 'blue', 'indigo', 'violet', 'lightgrey', 'black', 'lightgreen'];
 const TABLE_BORDER_WIDTH = 4;
 const HANDLE_SIZE = 10;
-const CANVAS_WIDTH = 1500;
-const CANVAS_HEIGHT = 600;
+const CANVAS_WIDTH: number = 1500;
+const CANVAS_HEIGHT: number = 600;
 const GRID_SIZE = 10;
 
 type TState = {

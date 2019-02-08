@@ -1,9 +1,5 @@
 import React from 'react';
 
-type TState = {
-  id: string | null;
-};
-
 type TProps = {
   floorplan: React.RefObject<HTMLDivElement>;
   box: any; // TODO: properly type
@@ -18,6 +14,8 @@ type size = {
   height: number,
 }
 
+// move to config file
+const CANVAS_WIDTH = 1500; // sync up with other
 const GRID: size = { width: 150, height: 60 };
 const TABLE_MAX_SIZE: size = { width: 200, height: 200 };
 const TABLE_MIN_SIZE: size = { width: 50, height: 50 };
@@ -27,8 +25,7 @@ type Degrees90 = '0deg' | '90deg' | '180deg' | '270deg';
 const rotations: Degrees[] = ['0deg', '45deg', '90deg', '135deg', '180deg', '225deg', '270deg', '315deg'];
 const rotations90: Degrees90[] = ['0deg', '90deg', '180deg', '270deg']; // no multiples of 90
 
-// TODO: fix this to work at any canvas resolution
-const snapToGrid = (value: number): number => Math.round(value / 10) * 10;
+const snapToGrid = (value: number): number => Math.round(value / (CANVAS_WIDTH/ GRID.width)) * (CANVAS_WIDTH/GRID.width);
 
 const createCSSEditFunc = (el: React.RefObject<HTMLDivElement>) => (attrib: any, value: any, unit: string = 'px') => (el.current!.style[attrib] = value + unit);
 
@@ -155,7 +152,7 @@ const constrainRotate = (canvasRect: ClientRect, width: number, height: number, 
   return { top, left };
 }
 
-class Box extends React.Component<TProps, TState> {
+class Box extends React.Component<TProps> {
   private element: React.RefObject<HTMLDivElement> = React.createRef();
   private table: React.RefObject<HTMLDivElement> = React.createRef();
   private tableDetails: React.RefObject<HTMLDivElement> = React.createRef();
@@ -227,8 +224,8 @@ class Box extends React.Component<TProps, TState> {
       this.shouldRotate = false;
     }
 
-    const canvasRect = this.props.floorplan.current!.getBoundingClientRect() as DOMRect;
-    const containerRect = this.element.current!.getBoundingClientRect() as DOMRect;
+    const canvasRect = this.props.floorplan.current!.getBoundingClientRect();
+    const containerRect = this.element.current!.getBoundingClientRect();
     
     // Calculate the mouse position change from the first click
     const relativeX = clientX - this.initialMouseX + this.initialTableX - canvasRect.left;
@@ -258,7 +255,7 @@ class Box extends React.Component<TProps, TState> {
 
     const { clientX, clientY } = e;
 
-    const canvasRect = this.props.floorplan.current!.getBoundingClientRect() as DOMRect;
+    const canvasRect = this.props.floorplan.current!.getBoundingClientRect();
     const containerRect = this.element.current!.getBoundingClientRect();
 
     const resizeTable = createCSSEditFunc(this.element);
