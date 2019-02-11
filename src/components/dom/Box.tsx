@@ -5,6 +5,10 @@ type TProps = {
   box: any; // TODO: properly type
   highestIdx: number;
   reorder: (id: string) => void;
+  position: {
+    x: number,
+    y: number,
+  }
 };
 
 const ROTATION_THRESHOLD = 5;
@@ -83,7 +87,7 @@ const constrainResize = (canvasRect: ClientRect, containerRect: ClientRect, clie
   const canvasWidthWithOffset = canvasRect.width + canvasRect.left;
   const containerResizeWidth = clientX - containerRect.left;
   const containerAndCanvasBorderDiffWidth = canvasWidthWithOffset - containerRect.left;
-  
+
   const canvasHeightWithOffset = canvasRect.height + canvasRect.top;
   const containerResizeHeight = clientY - containerRect.top;
   const containerAndCanvasBorderDiffHeight = canvasHeightWithOffset - containerRect.top;
@@ -141,7 +145,7 @@ const constrainRotate = (canvasRect: ClientRect, width: number, height: number, 
     top = canvasRect.height - height;
   } else if (top < 0) {
     top = 0;
-  } 
+  }
 
   if (left + width > canvasRect.width) {
     left = canvasRect.width - width;
@@ -163,6 +167,13 @@ class Box extends React.Component<TProps> {
   private shouldRotate: boolean = false;
   private dragging: boolean = false;
   private rotationIdx: number = 0;
+
+  componentDidMount() {
+    const moveTable = createCSSEditFunc(this.element);
+
+    moveTable('top', this.props.position.y);
+    moveTable('left', this.props.position.x);
+  }
 
   setRotate = () => {
     this.shouldRotate = true;
@@ -226,16 +237,16 @@ class Box extends React.Component<TProps> {
 
     const canvasRect = this.props.floorplan.current!.getBoundingClientRect();
     const containerRect = this.element.current!.getBoundingClientRect();
-    
+
     // Calculate the mouse position change from the first click
     const relativeX = clientX - this.initialMouseX + this.initialTableX - canvasRect.left;
     const relativeY = clientY - this.initialMouseY + this.initialTableY - canvasRect.top;
 
-    
+
     const moveTable = createCSSEditFunc(this.element);
-    
+
     const { top , left } = constrainDrag(canvasRect, containerRect, relativeX, relativeY);
-    
+
     // Reposition the element
     moveTable('top', top);
     moveTable('left', left);
