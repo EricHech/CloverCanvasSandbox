@@ -1,7 +1,7 @@
 import React from 'react';
 import Box from './Box';
 
-const accurateNum = (number: number): number => parseFloat(number.toFixed(6));
+export const accurateNum = (number: number): number => parseFloat(number.toFixed(6));
 const snapToGridCreator = (gridSize: number) => (value: number): number => accurateNum(gridSize * Math.round(value / gridSize));
 
 class Grid extends React.Component<any> {

@@ -49,9 +49,6 @@ const calculateNewCenterPos = (canvasRect: ClientRect, parentPos: ClientRect) =>
   const nextLeft = currLeft + parentPos.width / 2 - parentPos.height / 2;
   const nextTop = currTop + parentPos.height / 2 - parentPos.width / 2;
 
-  console.log('currL/T:', currLeft, currTop)
-  console.log('nextL/T', nextLeft, nextTop)
-
   return { nextLeft, nextTop };
 };
 
@@ -202,26 +199,34 @@ class Box extends React.Component<TProps> {
     const size = this.props.pixToGrid(this.props.size.width, this.props.size.height);
     this.tableSizeOnGrid = { width: size.x, height: size.y };
 
-    window.addEventListener('resize', this.handleWindowResize);
+    window.addEventListener('resize', this.handleWindowResize());
   }
 
   componentWillUnmount() {
-    window.removeEventListener('resize', this.handleWindowResize);
+    window.removeEventListener('resize', this.handleWindowResize());
   }
 
-  handleWindowResize = throttle(() => {
-    const containerRect = this.container.current!.getBoundingClientRect();
+  handleWindowResize = () => {
+    let timeout: number;
 
-    const editTable = createCSSEditFunc(this.container);
+    return () => {
+      if (timeout) cancelAnimationFrame(timeout);
 
-    const { x, y } = this.props.gridToPix(this.tablePosOnGrid.x, this.tablePosOnGrid.y);
-    const { x: width, y: height } = this.props.gridToPix(this.tableSizeOnGrid.width, this.tableSizeOnGrid.height);
+      timeout = requestAnimationFrame(() => {
+        const containerRect = this.container.current!.getBoundingClientRect();
 
-    editTable('top', y);
-    editTable('left', x);
-    editTable('width', width);
-    editTable('height', height);
-  }, THROTTLE_SPEED);
+        const editTable = createCSSEditFunc(this.container);
+
+        const { x, y } = this.props.gridToPix(this.tablePosOnGrid.x, this.tablePosOnGrid.y);
+        const { x: width, y: height } = this.props.gridToPix(this.tableSizeOnGrid.width, this.tableSizeOnGrid.height);
+
+        editTable('top', y);
+        editTable('left', x);
+        editTable('width', width);
+        editTable('height', height);
+      })
+    }
+  }
 
   setRotate = () => {
     this.shouldRotate = true;
@@ -232,7 +237,6 @@ class Box extends React.Component<TProps> {
     e.stopPropagation();
 
     const { clientX, clientY } = isTouchEvent(e) ? e.touches[0] : (e as any);
-    // console.log((e as any).touches[0])
     const containerRect = this.container.current!.getBoundingClientRect() as DOMRect;
 
     // Save the intial mouse position // TODO:
@@ -379,12 +383,9 @@ class Box extends React.Component<TProps> {
 
       const { top, left } = constrainRotate(canvasRect, nextWidth, nextHeight, nextTop, nextLeft);
 
-      console.log('right before snappin:', left, top);
-
       const _top = this.props.snapToGridH(top);
       const _left = this.props.snapToGridW(left);
 
-      console.log('right before pixToGrid:', _left, _top);
       this.tablePosOnGrid = this.props.pixToGrid(_left, _top);
 
       adjustContainer('top', _top);

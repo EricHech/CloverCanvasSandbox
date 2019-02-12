@@ -1,5 +1,5 @@
 import React from 'react';
-import Grid from './Grid';
+import Grid, { accurateNum } from './Grid';
 
 // move to config file
 const colors = ['red', 'orange', 'yellow', 'green', 'blue', 'indigo', 'violet', 'lightgrey', 'black', 'lightgreen'];
@@ -52,33 +52,40 @@ class CanvasElements extends React.Component<TProps, TState> {
     GRID_SIZE_W: 0,
   }
 
-  handleResize = throttle(() => {
-    this.ctx = this.setupCanvas(this.canvas.current!);
+  handleResize = () => {
+    let timeout: number;
 
-    this.drawGrid();
-  }, THROTTLE_SPEED)
+    return () => {
+      if (timeout) cancelAnimationFrame(timeout);
+
+      timeout = requestAnimationFrame(() => {
+        this.ctx = this.setupCanvas(this.canvas.current!);
+        this.drawGrid();
+      });
+    }
+  }
 
   componentDidMount() {
     this.ctx = this.setupCanvas(this.canvas.current!);
 
     this.drawGrid();
 
-    window.addEventListener('resize', this.handleResize);
+    window.addEventListener('resize', this.handleResize());
   }
 
   componentWillUnmount() {
-    window.removeEventListener('resize', this.handleResize);
+    window.removeEventListener('resize', this.handleResize());
   }
 
   drawGrid = () => {
-    const GRID_SIZE_H = (Math.trunc(this.height) / GRID.height);
-    const GRID_SIZE_W = (Math.trunc(this.width) / GRID.width);
+    const GRID_SIZE_H = accurateNum(this.height / GRID.height);
+    const GRID_SIZE_W = accurateNum(this.width / GRID.width);
 
     this.ctx!.clearRect(0, 0, this.width, this.height);
     /*
       TODO:
       # We're geniuses and figured out that the only way it works is to draw infinitesimally small diagonals
-      # <!–– (this.GRID_SIZE_H & this.state.GRID_SIZE_W) -->
+      # <!–– (GRID_SIZE_H & GRID_SIZE_W) -->
     */
     for (let i = 0; i < GRID.height; i++) {
       this.ctx!.beginPath();
@@ -112,12 +119,12 @@ class CanvasElements extends React.Component<TProps, TState> {
 
     // assure the floorplan is the correct aspect ratio
     // the height is 40% of the width aka 5:2
-    this.floorplan.current!.style.height = rect2.width * 0.4 + 'px';
+    this.floorplan.current!.style.height = accurateNum(rect2.width * 0.4) + 'px';
 
     const rect = this.floorplan.current!.getBoundingClientRect();
 
-    canvas.width = rect.width * devicePixelRatio;
-    canvas.height = rect.height * devicePixelRatio;
+    canvas.width = accurateNum(rect.width * devicePixelRatio);
+    canvas.height = accurateNum(rect.height * devicePixelRatio);
 
     canvas.style.width = rect.width + 'px';
     canvas.style.height = rect.height + 'px';
@@ -159,23 +166,23 @@ class CanvasElements extends React.Component<TProps, TState> {
 
     const test = toDisplay;
 
-      return (
-        <div className="App-body">
-          <div ref={this.floorplan} className='floorplan'>
-            <canvas className="actual-canvas" ref={this.canvas} width={CANVAS_WIDTH} height={CANVAS_HEIGHT} />
-            {
-              (this.state.GRID_SIZE_H || this.state.GRID_SIZE_W) &&
-              <Grid
-                tables={test}
-                floorplan={this.floorplan}
-                reorder={this.reorder}
-                canvasDimensions={{ width: this.width, height: this.height }}
-                grid={{ width: this.state.GRID_SIZE_W, height: this.state.GRID_SIZE_H }}
-              />
-            }
-          </div>
+    return (
+      <div className="App-body">
+        <div ref={this.floorplan} className='floorplan'>
+          <canvas className="actual-canvas" ref={this.canvas} width={CANVAS_WIDTH} height={CANVAS_HEIGHT} />
+          {
+            (this.state.GRID_SIZE_H || this.state.GRID_SIZE_W) &&
+            <Grid
+              tables={test}
+              floorplan={this.floorplan}
+              reorder={this.reorder}
+              canvasDimensions={{ width: this.width, height: this.height }}
+              grid={{ width: this.state.GRID_SIZE_W, height: this.state.GRID_SIZE_H }}
+            />
+          }
         </div>
-      );
+      </div>
+    );
   }
 }
 
