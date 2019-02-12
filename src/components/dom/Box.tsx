@@ -1,30 +1,34 @@
 import React from 'react';
 import { throttle, THROTTLE_SPEED } from './CanvasElements';
 
+function isTouchEvent(e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>): e is React.TouchEvent<HTMLDivElement> {
+  return e.hasOwnProperty('touches');
+}
+
 type TProps = {
   floorplan: React.RefObject<HTMLDivElement>;
   box: any; // TODO: properly type
   highestIdx: number;
   reorder: (id: string) => void;
   position: {
-    x: number,
-    y: number,
+    x: number;
+    y: number;
   };
   size: {
-    width: number,
-    height: number,
+    width: number;
+    height: number;
   };
-  pixToGrid: (x: number, y: number) => { x: number, y: number };
-  gridToPix: (x: number, y: number) => { x: number, y: number };
+  pixToGrid: (x: number, y: number) => { x: number; y: number };
+  gridToPix: (x: number, y: number) => { x: number; y: number };
   snapToGrid: (val: number) => number;
 };
 
 const ROTATION_THRESHOLD = 5;
 
 type size = {
-  width: number,
-  height: number,
-}
+  width: number;
+  height: number;
+};
 
 // move to config file
 const TABLE_MAX_SIZE: size = { width: 20, height: 20 };
@@ -47,7 +51,7 @@ const calculateNewCenterPos = (canvasRect: ClientRect, parentPos: ClientRect) =>
   return { nextLeft, nextTop };
 };
 
-const constrainDrag = (canvasRect: ClientRect, containerRect: ClientRect, relativeX: number, relativeY: number): { top: number, left: number } => {
+const constrainDrag = (canvasRect: ClientRect, containerRect: ClientRect, relativeX: number, relativeY: number): { top: number; left: number } => {
   let top = 0;
   let left = 0;
 
@@ -62,7 +66,6 @@ const constrainDrag = (canvasRect: ClientRect, containerRect: ClientRect, relati
     // Check if the new position won't end up outside the boundaries
   } else if (relativeX < relativeWidth && relativeX > 0) {
     left = relativeX;
-
   } else if (relativeY < relativeHeight && relativeY > 0) {
     top = relativeY;
   }
@@ -82,9 +85,9 @@ const constrainDrag = (canvasRect: ClientRect, containerRect: ClientRect, relati
   }
 
   return { top, left };
-}
+};
 
-const constrainResize = (canvasRect: ClientRect, containerRect: ClientRect, clientX: number, clientY: number, gridToPix: any): { height: number, width: number } => {
+const constrainResize = (canvasRect: ClientRect, containerRect: ClientRect, clientX: number, clientY: number, gridToPix: any): { height: number; width: number } => {
   let width = 0;
   let height = 0;
 
@@ -95,7 +98,6 @@ const constrainResize = (canvasRect: ClientRect, containerRect: ClientRect, clie
   const canvasHeightWithOffset = canvasRect.height + canvasRect.top;
   const containerResizeHeight = clientY - containerRect.top;
   const containerAndCanvasBorderDiffHeight = canvasHeightWithOffset - containerRect.top;
-
 
   const { x: maxWidth, y: maxHeight } = gridToPix(TABLE_MAX_SIZE.width, TABLE_MAX_SIZE.height);
   const { x: minWidth, y: minHeight } = gridToPix(TABLE_MIN_SIZE.width, TABLE_MIN_SIZE.height);
@@ -145,9 +147,9 @@ const constrainResize = (canvasRect: ClientRect, containerRect: ClientRect, clie
   }
 
   return { height, width };
-}
+};
 
-const constrainRotate = (canvasRect: ClientRect, width: number, height: number, top: number, left: number): { top: number, left: number } => {
+const constrainRotate = (canvasRect: ClientRect, width: number, height: number, top: number, left: number): { top: number; left: number } => {
   if (top + height > canvasRect.height) {
     top = canvasRect.height - height;
   } else if (top < 0) {
@@ -161,7 +163,7 @@ const constrainRotate = (canvasRect: ClientRect, width: number, height: number, 
   }
 
   return { top, left };
-}
+};
 
 class Box extends React.Component<TProps> {
   private container: React.RefObject<HTMLDivElement> = React.createRef();
@@ -175,12 +177,12 @@ class Box extends React.Component<TProps> {
   private dragging: boolean = false;
   private rotationIdx: number = 0;
   private tablePosOnGrid: {
-    x: number,
-    y: number,
+    x: number;
+    y: number;
   } = { x: 0, y: 0 };
   private tableSizeOnGrid: {
-    width: number,
-    height: number,
+    width: number;
+    height: number;
   } = { width: 0, height: 0 };
 
   componentDidMount() {
@@ -221,19 +223,22 @@ class Box extends React.Component<TProps> {
     this.shouldRotate = true;
   };
 
-  mouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+  mouseDown = (e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
 
-    const { clientX, clientY } = e;
+    const { clientX, clientY } = isTouchEvent(e) ? e.touches[0] : (e as any);
+    console.log((e as any).touches[0])
     const containerRect = this.container.current!.getBoundingClientRect() as DOMRect;
 
     // Save the intial mouse position // TODO:
+    console.log('clientX', clientX);
     this.initialMouseX = clientX;
     this.initialMouseY = clientY;
     this.initialTableX = containerRect.x;
     this.initialTableY = containerRect.y;
 
+    console.log('this.initialMouseX', this.initialMouseX);
     // Bring the selected element to the foreground
     this.props.reorder(this.props.box.name);
 
@@ -244,7 +249,7 @@ class Box extends React.Component<TProps> {
     this.setRotate();
   };
 
-  mouseUp = (e: MouseEvent) => {
+  mouseUp = (e: MouseEvent | TouchEvent) => {
     e.preventDefault();
     e.stopPropagation();
 
@@ -266,14 +271,18 @@ class Box extends React.Component<TProps> {
     document.onmousemove = this.continueDrag;
     document.onmouseup = this.mouseUp;
 
+    document.ontouchmove = this.continueDrag;
+    document.ontouchend = this.mouseUp;
+
     this.dragging = true;
   };
 
-  continueDrag = (e: MouseEvent) => {
+  continueDrag = (e: MouseEvent | TouchEvent) => {
     e.preventDefault();
     e.stopPropagation();
 
-    const { clientX, clientY } = e;
+    const { clientX, clientY } = e instanceof TouchEvent ? e.touches[0] : e;
+    console.log(`clientX ${clientX}`);
 
     // The threshold for the rotation to stop if the table is moved
     // Rotate it if it's just nudged a little
@@ -288,6 +297,7 @@ class Box extends React.Component<TProps> {
     const relativeX = clientX - this.initialMouseX + this.initialTableX - canvasRect.left;
     const relativeY = clientY - this.initialMouseY + this.initialTableY - canvasRect.top;
 
+    console.log("what's nan", clientX, this.initialMouseX, this.initialTableX, canvasRect.left);
 
     const moveTable = createCSSEditFunc(this.container);
 
@@ -325,7 +335,7 @@ class Box extends React.Component<TProps> {
     const { height, width } = constrainResize(canvasRect, containerRect, clientX, clientY, this.props.gridToPix);
 
     const newWidth = this.props.snapToGrid(width);
-    const newHeight = this.props.snapToGrid(height)
+    const newHeight = this.props.snapToGrid(height);
 
     resizeTable('height', newHeight);
     resizeTable('width', newWidth);
@@ -402,7 +412,7 @@ class Box extends React.Component<TProps> {
 
     const rotation = rotations[this.rotationIdx];
     return (
-      <div ref={this.container} id={name} onMouseDown={this.mouseDown} className="element" style={{ zIndex: this.dragging ? highestIdx : idx }}>
+      <div ref={this.container} id={name} onMouseDown={this.mouseDown} onTouchStart={this.mouseDown} className="element" style={{ zIndex: this.dragging ? highestIdx : idx }}>
         <div ref={this.table} className="table">
           <div ref={this.tableDetails} className="table-details">
             {name}
