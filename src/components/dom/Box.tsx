@@ -1,4 +1,5 @@
 import React from 'react';
+import { throttle, THROTTLE_SPEED } from './CanvasElements';
 
 type TProps = {
   floorplan: React.RefObject<HTMLDivElement>;
@@ -10,6 +11,8 @@ type TProps = {
     y: number,
   };
   pixToGrid: (x: number, y: number) => { x: number, y: number };
+  gridToPix: (x: number, y: number) => { x: number, y: number };
+  snapToGrid: (val: number) => number;
 };
 
 const ROTATION_THRESHOLD = 5;
@@ -20,8 +23,6 @@ type size = {
 }
 
 // move to config file
-const CANVAS_WIDTH = 1500; // sync up with other
-const GRID: size = { width: 150, height: 60 };
 const TABLE_MAX_SIZE: size = { width: 200, height: 200 };
 const TABLE_MIN_SIZE: size = { width: 50, height: 50 };
 type Degrees = '0deg' | '45deg' | '90deg' | '135deg' | '180deg' | '225deg' | '270deg' | '315deg';
@@ -30,7 +31,7 @@ type Degrees90 = '0deg' | '90deg' | '180deg' | '270deg';
 const rotations: Degrees[] = ['0deg', '45deg', '90deg', '135deg', '180deg', '225deg', '270deg', '315deg'];
 const rotations90: Degrees90[] = ['0deg', '90deg', '180deg', '270deg']; // no multiples of 90
 
-const snapToGrid = (value: number): number => Math.round(value / (CANVAS_WIDTH / GRID.width)) * (CANVAS_WIDTH / GRID.width);
+// const snapToGrid = (value: number): number => Math.round(value / (CANVAS_WIDTH / GRID.width)) * (CANVAS_WIDTH / GRID.width);
 
 const createCSSEditFunc = (el: React.RefObject<HTMLDivElement>) => (attrib: any, value: any, unit: string = 'px') => (el.current!.style[attrib] = value + unit);
 
@@ -78,7 +79,7 @@ const constrainDrag = (canvasRect: ClientRect, containerRect: ClientRect, relati
     top = 0;
   }
 
-  return { top: snapToGrid(top), left: snapToGrid(left) };
+  return { top, left };
 }
 
 const constrainResize = (canvasRect: ClientRect, containerRect: ClientRect, clientX: number, clientY: number): { height: number, width: number } => {
@@ -138,7 +139,7 @@ const constrainResize = (canvasRect: ClientRect, containerRect: ClientRect, clie
     height = TABLE_MIN_SIZE.height;
   }
 
-  return { height: snapToGrid(height), width: snapToGrid(width) };
+  return { height, width };
 }
 
 const constrainRotate = (canvasRect: ClientRect, width: number, height: number, top: number, left: number): { top: number, left: number } => {
@@ -154,7 +155,7 @@ const constrainRotate = (canvasRect: ClientRect, width: number, height: number, 
     left = 0;
   }
 
-  return { top: snapToGrid(top), left: snapToGrid(left) };
+  return { top, left };
 }
 
 class Box extends React.Component<TProps> {
@@ -168,13 +169,37 @@ class Box extends React.Component<TProps> {
   private shouldRotate: boolean = false;
   private dragging: boolean = false;
   private rotationIdx: number = 0;
+  private gridPos: {
+    x: number,
+    y: number,
+  } = { x: 0, y: 0 };
 
   componentDidMount() {
     const moveTable = createCSSEditFunc(this.container);
 
     moveTable('top', this.props.position.y);
     moveTable('left', this.props.position.x);
+
+    this.gridPos = this.props.pixToGrid(this.props.position.x, this.props.position.y);
+
+    window.addEventListener('resize', this.handleWindowResize);
+
   }
+
+  componentWillUnmount() {
+    window.removeEventListener('resize', this.handleWindowResize);
+  }
+
+  handleWindowResize = throttle(() => {
+    const containerRect = this.container.current!.getBoundingClientRect();
+
+    const moveTable = createCSSEditFunc(this.container);
+
+    const { x, y } = this.props.gridToPix(this.gridPos.x, this.gridPos.y);
+
+    moveTable('top', y);
+    moveTable('left', x);
+  }, THROTTLE_SPEED);
 
   setRotate = () => {
     this.shouldRotate = true;
@@ -253,8 +278,13 @@ class Box extends React.Component<TProps> {
     const { top, left } = constrainDrag(canvasRect, containerRect, relativeX, relativeY);
 
     // Reposition the element
-    moveTable('top', top);
-    moveTable('left', left);
+    const newTop = this.props.snapToGrid(top);
+    const newLeft = this.props.snapToGrid(left);
+
+    moveTable('top', newTop);
+    moveTable('left', newLeft);
+
+    this.gridPos = this.props.pixToGrid(newLeft, newTop);
   };
 
   startResize = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -278,8 +308,8 @@ class Box extends React.Component<TProps> {
 
     const { height, width } = constrainResize(canvasRect, containerRect, clientX, clientY);
 
-    resizeTable('height', height);
-    resizeTable('width', width);
+    resizeTable('height', this.props.snapToGrid(height));
+    resizeTable('width', this.props.snapToGrid(width));
   };
 
   // TODO: Check if any helper functions can be used instead
@@ -316,8 +346,8 @@ class Box extends React.Component<TProps> {
 
       const { top, left } = constrainRotate(canvasRect, nextWidth, nextHeight, nextTop, nextLeft);
 
-      adjustContainer('top', top);
-      adjustContainer('left', left);
+      adjustContainer('top', this.props.snapToGrid(top));
+      adjustContainer('left', this.props.snapToGrid(left));
 
     } else {
       // If you resize a table from a skyscraper shape to a bridge, the rotations need to invert as well.

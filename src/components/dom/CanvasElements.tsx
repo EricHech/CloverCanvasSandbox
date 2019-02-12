@@ -7,14 +7,16 @@ const TABLE_BORDER_WIDTH = 4;
 const HANDLE_SIZE = 10;
 const CANVAS_WIDTH: number = 1500;
 const CANVAS_HEIGHT: number = 600;
+export const THROTTLE_SPEED: number = 50;
 
 type size = {
   width: number,
   height: number,
 }
+
 const GRID: size = { width: 150, height: 60 };
 
-function throttle(fn: Function, delay: number) {
+export function throttle(fn: Function, delay: number) {
   let isCalled = false;
 
   return function (...args: any) {
@@ -55,7 +57,7 @@ class CanvasElements extends React.Component<TProps, TState> {
     this.ctx = this.setupCanvas(this.canvas.current!);
 
     this.drawGrid();
-  }, 50)
+  }, THROTTLE_SPEED)
 
   componentDidMount() {
     this.ctx = this.setupCanvas(this.canvas.current!);
@@ -149,7 +151,7 @@ class CanvasElements extends React.Component<TProps, TState> {
     const toDisplay = this.state.characters.map((each: any, i: number) => {
       each.idx = i;
       each.color = colors[i];
-      each.x = 0;
+      each.x = 120;
       each.y = 0;
       return each;
     });
