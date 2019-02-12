@@ -20,7 +20,8 @@ type TProps = {
   };
   pixToGrid: (x: number, y: number) => { x: number; y: number };
   gridToPix: (x: number, y: number) => { x: number; y: number };
-  snapToGrid: (val: number) => number;
+  snapToGridW: (val: number) => number;
+  snapToGridH: (val: number) => number;
 };
 
 const ROTATION_THRESHOLD = 5;
@@ -47,6 +48,9 @@ const calculateNewCenterPos = (canvasRect: ClientRect, parentPos: ClientRect) =>
 
   const nextLeft = currLeft + parentPos.width / 2 - parentPos.height / 2;
   const nextTop = currTop + parentPos.height / 2 - parentPos.width / 2;
+
+  console.log('currL/T:', currLeft, currTop)
+  console.log('nextL/T', nextLeft, nextTop)
 
   return { nextLeft, nextTop };
 };
@@ -228,17 +232,15 @@ class Box extends React.Component<TProps> {
     e.stopPropagation();
 
     const { clientX, clientY } = isTouchEvent(e) ? e.touches[0] : (e as any);
-    console.log((e as any).touches[0])
+    // console.log((e as any).touches[0])
     const containerRect = this.container.current!.getBoundingClientRect() as DOMRect;
 
     // Save the intial mouse position // TODO:
-    console.log('clientX', clientX);
     this.initialMouseX = clientX;
     this.initialMouseY = clientY;
     this.initialTableX = containerRect.x;
     this.initialTableY = containerRect.y;
 
-    console.log('this.initialMouseX', this.initialMouseX);
     // Bring the selected element to the foreground
     this.props.reorder(this.props.box.name);
 
@@ -262,7 +264,6 @@ class Box extends React.Component<TProps> {
     } else {
       const containerRect = this.container.current!.getBoundingClientRect() as DOMRect;
       const canvasRect = this.props.floorplan.current!.getBoundingClientRect();
-      this.props.pixToGrid(containerRect.left - canvasRect.left, containerRect.top - canvasRect.top);
     }
   };
 
@@ -282,7 +283,6 @@ class Box extends React.Component<TProps> {
     e.stopPropagation();
 
     const { clientX, clientY } = e instanceof TouchEvent ? e.touches[0] : e;
-    console.log(`clientX ${clientX}`);
 
     // The threshold for the rotation to stop if the table is moved
     // Rotate it if it's just nudged a little
@@ -297,15 +297,13 @@ class Box extends React.Component<TProps> {
     const relativeX = clientX - this.initialMouseX + this.initialTableX - canvasRect.left;
     const relativeY = clientY - this.initialMouseY + this.initialTableY - canvasRect.top;
 
-    console.log("what's nan", clientX, this.initialMouseX, this.initialTableX, canvasRect.left);
-
     const moveTable = createCSSEditFunc(this.container);
 
     const { top, left } = constrainDrag(canvasRect, containerRect, relativeX, relativeY);
 
     // Reposition the element
-    const newTop = this.props.snapToGrid(top);
-    const newLeft = this.props.snapToGrid(left);
+    const newTop = this.props.snapToGridH(top);
+    const newLeft = this.props.snapToGridW(left);
 
     moveTable('top', newTop);
     moveTable('left', newLeft);
@@ -334,8 +332,8 @@ class Box extends React.Component<TProps> {
 
     const { height, width } = constrainResize(canvasRect, containerRect, clientX, clientY, this.props.gridToPix);
 
-    const newWidth = this.props.snapToGrid(width);
-    const newHeight = this.props.snapToGrid(height);
+    const newWidth = this.props.snapToGridW(width);
+    const newHeight = this.props.snapToGridH(height);
 
     resizeTable('height', newHeight);
     resizeTable('width', newWidth);
@@ -381,9 +379,12 @@ class Box extends React.Component<TProps> {
 
       const { top, left } = constrainRotate(canvasRect, nextWidth, nextHeight, nextTop, nextLeft);
 
-      const _top = this.props.snapToGrid(top);
-      const _left = this.props.snapToGrid(left);
+      console.log('right before snappin:', left, top);
 
+      const _top = this.props.snapToGridH(top);
+      const _left = this.props.snapToGridW(left);
+
+      console.log('right before pixToGrid:', _left, _top);
       this.tablePosOnGrid = this.props.pixToGrid(_left, _top);
 
       adjustContainer('top', _top);

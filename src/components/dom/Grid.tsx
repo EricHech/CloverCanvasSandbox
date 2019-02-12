@@ -2,12 +2,15 @@ import React from 'react';
 import Box from './Box';
 
 const accurateNum = (number: number): number => parseFloat(number.toFixed(6));
-const snapToGridCreator = (gridSize: number) => (value: number): number => accurateNum(gridSize * Math.round(value/gridSize));
+const snapToGridCreator = (gridSize: number) => (value: number): number => accurateNum(gridSize * Math.round(value / gridSize));
+
 class Grid extends React.Component<any> {
-  private snapToGrid: (pos: number) => number = snapToGridCreator(this.props.grid.height);
+  private snapToGridW: (pos: number) => number = snapToGridCreator(this.props.grid.width);
+  private snapToGridH: (pos: number) => number = snapToGridCreator(this.props.grid.height);
 
   componentDidUpdate() {
-    this.snapToGrid = snapToGridCreator(this.props.grid.height);
+    this.snapToGridW = snapToGridCreator(this.props.grid.width);
+    this.snapToGridH = snapToGridCreator(this.props.grid.height);
   }
 
   pixToGrid = (x: number, y: number) => {
@@ -31,14 +34,17 @@ class Grid extends React.Component<any> {
         {this.props.tables.map((each: any, i: number, arr: any[]) => {
           const position = this.gridToPix(each.x, each.y);
           const size = this.gridToPix(each.width, each.height);
-          return (<Box key={each.name} floorplan={this.props.floorplan} box={each}
-            highestIdx={arr.length} reorder={this.props.reorder}
-            position={position}
-            size={{ width: size.x, height: size.y }}
-            pixToGrid={this.pixToGrid}
-            gridToPix={this.gridToPix}
-            snapToGrid={this.snapToGrid}
-          />)
+          return (
+            <Box key={each.name} floorplan={this.props.floorplan} box={each}
+              highestIdx={arr.length} reorder={this.props.reorder}
+              position={position}
+              size={{ width: size.x, height: size.y }}
+              pixToGrid={this.pixToGrid}
+              gridToPix={this.gridToPix}
+              snapToGridW={this.snapToGridW}
+              snapToGridH={this.snapToGridH}
+            />
+          )
         })}
       </>
     );
