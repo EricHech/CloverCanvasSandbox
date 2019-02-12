@@ -153,6 +153,8 @@ class CanvasElements extends React.Component<TProps, TState> {
       each.color = colors[i];
       each.x = 120;
       each.y = 0;
+      each.width = 10;
+      each.height = 10;
       return each;
     });
 
@@ -168,8 +170,8 @@ class CanvasElements extends React.Component<TProps, TState> {
                 tables={test}
                 floorplan={this.floorplan}
                 reorder={this.reorder}
-                canvasDimensions={{ w: this.width, h: this.height }}
-                grid={{ w: this.state.GRID_SIZE_W, h: this.state.GRID_SIZE_H }}
+                canvasDimensions={{ width: this.width, height: this.height }}
+                grid={{ width: this.state.GRID_SIZE_W, height: this.state.GRID_SIZE_H }}
               />
             }
           </div>

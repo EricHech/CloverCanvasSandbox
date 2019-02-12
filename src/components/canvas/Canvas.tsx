@@ -271,7 +271,6 @@ class Canvas extends React.Component<any, {}> {
   removeMoveListener = () => (this.canvas!.onmousemove = null);
 
   render() {
-    console.log(this.props.characters);
     return (
       <div className="App-body">
         Here is some text.

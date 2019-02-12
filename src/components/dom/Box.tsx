@@ -10,6 +10,10 @@ type TProps = {
     x: number,
     y: number,
   };
+  size: {
+    width: number,
+    height: number,
+  };
   pixToGrid: (x: number, y: number) => { x: number, y: number };
   gridToPix: (x: number, y: number) => { x: number, y: number };
   snapToGrid: (val: number) => number;
@@ -23,8 +27,8 @@ type size = {
 }
 
 // move to config file
-const TABLE_MAX_SIZE: size = { width: 200, height: 200 };
-const TABLE_MIN_SIZE: size = { width: 50, height: 50 };
+const TABLE_MAX_SIZE: size = { width: 20, height: 20 };
+const TABLE_MIN_SIZE: size = { width: 5, height: 5 };
 type Degrees = '0deg' | '45deg' | '90deg' | '135deg' | '180deg' | '225deg' | '270deg' | '315deg';
 type Degrees90 = '0deg' | '90deg' | '180deg' | '270deg';
 
@@ -82,7 +86,7 @@ const constrainDrag = (canvasRect: ClientRect, containerRect: ClientRect, relati
   return { top, left };
 }
 
-const constrainResize = (canvasRect: ClientRect, containerRect: ClientRect, clientX: number, clientY: number): { height: number, width: number } => {
+const constrainResize = (canvasRect: ClientRect, containerRect: ClientRect, clientX: number, clientY: number, gridToPix: any): { height: number, width: number } => {
   let width = 0;
   let height = 0;
 
@@ -94,49 +98,52 @@ const constrainResize = (canvasRect: ClientRect, containerRect: ClientRect, clie
   const containerResizeHeight = clientY - containerRect.top;
   const containerAndCanvasBorderDiffHeight = canvasHeightWithOffset - containerRect.top;
 
+
+  const { x: maxWidth, y: maxHeight } = gridToPix(TABLE_MAX_SIZE.width, TABLE_MAX_SIZE.height);
+  const { x: minWidth, y: minHeight } = gridToPix(TABLE_MIN_SIZE.width, TABLE_MIN_SIZE.height);
   // Check if the new size would grow past the boundaries of the layout
   if (clientX <= canvasWidthWithOffset) {
     // Check if the new size would be greater than the max
-    if (containerResizeWidth <= TABLE_MAX_SIZE.width) {
+    if (containerResizeWidth <= maxWidth) {
       // Calculate the new width and height based on the difference between the top/left and the position of the mouse at the bottom/right
       width = containerResizeWidth;
     } else {
-      width = TABLE_MAX_SIZE.width;
+      width = maxWidth;
     }
   } else {
     // Grow until the table either hits the boundaries or its max size
-    if (containerAndCanvasBorderDiffWidth < TABLE_MAX_SIZE.width) {
+    if (containerAndCanvasBorderDiffWidth < maxWidth) {
       width = containerAndCanvasBorderDiffWidth;
     } else {
-      width = TABLE_MAX_SIZE.width;
+      width = maxWidth;
     }
   }
 
   // Check if the new size would grow past the boundaries of the layout
   if (clientY <= canvasHeightWithOffset) {
     // Check if the new size would be greater than the max
-    if (containerResizeHeight <= TABLE_MAX_SIZE.height) {
+    if (containerResizeHeight <= maxHeight) {
       // Calculate the new width and height based on the difference between the top/left and the position of the mouse at the bottom/right
       height = containerResizeHeight;
     } else {
-      height = TABLE_MAX_SIZE.height;
+      height = maxHeight;
     }
   } else {
     // Grow until the table either hits the boundaries or its max size
-    if (containerAndCanvasBorderDiffHeight < TABLE_MAX_SIZE.height) {
+    if (containerAndCanvasBorderDiffHeight < maxHeight) {
       height = containerAndCanvasBorderDiffHeight;
     } else {
-      height = TABLE_MAX_SIZE.height;
+      height = maxHeight;
     }
   }
 
   // Keep the tables above the minimum size
-  if (containerResizeWidth <= TABLE_MIN_SIZE.width) {
-    width = TABLE_MIN_SIZE.width;
+  if (containerResizeWidth <= minWidth) {
+    width = minWidth;
   }
 
-  if (containerResizeHeight <= TABLE_MIN_SIZE.height) {
-    height = TABLE_MIN_SIZE.height;
+  if (containerResizeHeight <= minHeight) {
+    height = minHeight;
   }
 
   return { height, width };
@@ -169,21 +176,29 @@ class Box extends React.Component<TProps> {
   private shouldRotate: boolean = false;
   private dragging: boolean = false;
   private rotationIdx: number = 0;
-  private gridPos: {
+  private tablePosOnGrid: {
     x: number,
     y: number,
   } = { x: 0, y: 0 };
+  private tableSizeOnGrid: {
+    width: number,
+    height: number,
+  } = { width: 0, height: 0 };
 
   componentDidMount() {
-    const moveTable = createCSSEditFunc(this.container);
+    const editTable = createCSSEditFunc(this.container);
 
-    moveTable('top', this.props.position.y);
-    moveTable('left', this.props.position.x);
+    editTable('top', this.props.position.y);
+    editTable('left', this.props.position.x);
 
-    this.gridPos = this.props.pixToGrid(this.props.position.x, this.props.position.y);
+    editTable('height', this.props.size.height);
+    editTable('width', this.props.size.width);
+
+    this.tablePosOnGrid = this.props.pixToGrid(this.props.position.x, this.props.position.y);
+    const size = this.props.pixToGrid(this.props.size.width, this.props.size.height);
+    this.tableSizeOnGrid = { width: size.x, height: size.y };
 
     window.addEventListener('resize', this.handleWindowResize);
-
   }
 
   componentWillUnmount() {
@@ -193,12 +208,15 @@ class Box extends React.Component<TProps> {
   handleWindowResize = throttle(() => {
     const containerRect = this.container.current!.getBoundingClientRect();
 
-    const moveTable = createCSSEditFunc(this.container);
+    const editTable = createCSSEditFunc(this.container);
 
-    const { x, y } = this.props.gridToPix(this.gridPos.x, this.gridPos.y);
+    const { x, y } = this.props.gridToPix(this.tablePosOnGrid.x, this.tablePosOnGrid.y);
+    const { x: width, y: height } = this.props.gridToPix(this.tableSizeOnGrid.width, this.tableSizeOnGrid.height);
 
-    moveTable('top', y);
-    moveTable('left', x);
+    editTable('top', y);
+    editTable('left', x);
+    editTable('width', width);
+    editTable('height', height);
   }, THROTTLE_SPEED);
 
   setRotate = () => {
@@ -284,7 +302,7 @@ class Box extends React.Component<TProps> {
     moveTable('top', newTop);
     moveTable('left', newLeft);
 
-    this.gridPos = this.props.pixToGrid(newLeft, newTop);
+    this.tablePosOnGrid = this.props.pixToGrid(newLeft, newTop);
   };
 
   startResize = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -306,10 +324,16 @@ class Box extends React.Component<TProps> {
 
     const resizeTable = createCSSEditFunc(this.container);
 
-    const { height, width } = constrainResize(canvasRect, containerRect, clientX, clientY);
+    const { height, width } = constrainResize(canvasRect, containerRect, clientX, clientY, this.props.gridToPix);
 
-    resizeTable('height', this.props.snapToGrid(height));
-    resizeTable('width', this.props.snapToGrid(width));
+    const newWidth = this.props.snapToGrid(width);
+    const newHeight = this.props.snapToGrid(height)
+
+    resizeTable('height', newHeight);
+    resizeTable('width', newWidth);
+
+    const { x: _width, y: _height } = this.props.pixToGrid(newWidth, newHeight);
+    this.tableSizeOnGrid = { width: _width, height: _height };
   };
 
   // TODO: Check if any helper functions can be used instead
