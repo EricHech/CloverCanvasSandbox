@@ -368,7 +368,12 @@ class Box extends React.Component<TProps> {
       const nextWidth = containerRect.height;
       const nextHeight = containerRect.width;
 
+      const { x: _width, y: _height } = this.props.pixToGrid(nextWidth, nextHeight);
+      this.tableSizeOnGrid = { width: _width, height: _height };
+
       const { top, left } = constrainRotate(canvasRect, nextWidth, nextHeight, nextTop, nextLeft);
+
+      this.tablePosOnGrid = this.props.pixToGrid(left, top);
 
       adjustContainer('top', this.props.snapToGrid(top));
       adjustContainer('left', this.props.snapToGrid(left));
