@@ -3,7 +3,6 @@ import Grid from './Grid';
 
 // move to config file
 const colors = ['red', 'orange', 'yellow', 'green', 'blue', 'indigo', 'violet', 'lightgrey', 'black', 'lightgreen'];
-const TABLE_BORDER_WIDTH = 4;
 const HANDLE_SIZE = 10;
 const CANVAS_WIDTH: number = 1500;
 const CANVAS_HEIGHT: number = 600;
@@ -151,7 +150,7 @@ class CanvasElements extends React.Component<TProps, TState> {
     const toDisplay = this.state.characters.map((each: any, i: number) => {
       each.idx = i;
       each.color = colors[i];
-      each.x = 120;
+      each.x = 12;
       each.y = 0;
       each.width = 10;
       each.height = 10;

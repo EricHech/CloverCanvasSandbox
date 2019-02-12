@@ -35,8 +35,6 @@ type Degrees90 = '0deg' | '90deg' | '180deg' | '270deg';
 const rotations: Degrees[] = ['0deg', '45deg', '90deg', '135deg', '180deg', '225deg', '270deg', '315deg'];
 const rotations90: Degrees90[] = ['0deg', '90deg', '180deg', '270deg']; // no multiples of 90
 
-// const snapToGrid = (value: number): number => Math.round(value / (CANVAS_WIDTH / GRID.width)) * (CANVAS_WIDTH / GRID.width);
-
 const createCSSEditFunc = (el: React.RefObject<HTMLDivElement>) => (attrib: any, value: any, unit: string = 'px') => (el.current!.style[attrib] = value + unit);
 
 const calculateNewCenterPos = (canvasRect: ClientRect, parentPos: ClientRect) => {
@@ -373,10 +371,13 @@ class Box extends React.Component<TProps> {
 
       const { top, left } = constrainRotate(canvasRect, nextWidth, nextHeight, nextTop, nextLeft);
 
-      this.tablePosOnGrid = this.props.pixToGrid(left, top);
+      const _top = this.props.snapToGrid(top);
+      const _left = this.props.snapToGrid(left);
 
-      adjustContainer('top', this.props.snapToGrid(top));
-      adjustContainer('left', this.props.snapToGrid(left));
+      this.tablePosOnGrid = this.props.pixToGrid(_left, _top);
+
+      adjustContainer('top', _top);
+      adjustContainer('left', _left);
 
     } else {
       // If you resize a table from a skyscraper shape to a bridge, the rotations need to invert as well.

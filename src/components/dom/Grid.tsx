@@ -1,8 +1,8 @@
 import React from 'react';
 import Box from './Box';
 
-const snapToGridCreator = (gridSize: number) => (value: number): number => Math.round(value / gridSize) * gridSize;
-
+const accurateNum = (number: number): number => parseFloat(number.toFixed(6));
+const snapToGridCreator = (gridSize: number) => (value: number): number => accurateNum(gridSize * Math.round(value/gridSize));
 class Grid extends React.Component<any> {
   private snapToGrid: (pos: number) => number = snapToGridCreator(this.props.grid.height);
 
@@ -14,13 +14,13 @@ class Grid extends React.Component<any> {
     const newX = Math.round(x / this.props.grid.width);
     const newY = Math.round(y / this.props.grid.height);
 
-    const thing = { x: isNaN(newX) ? 0 : newX, y: isNaN(newY) ? 0 : newY };
-    return thing;
+
+    return { x: isNaN(newX) ? 0 : newX, y: isNaN(newY) ? 0 : newY };
   }
 
   gridToPix = (x: number, y: number) => {
-    const newX = x * this.props.grid.width;
-    const newY = y * this.props.grid.height;
+    const newX = accurateNum(x * this.props.grid.width);
+    const newY = accurateNum(y * this.props.grid.height);
 
     return { x: newX, y: newY };
   }
