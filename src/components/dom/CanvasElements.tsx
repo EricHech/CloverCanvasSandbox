@@ -15,20 +15,6 @@ type size = {
 
 const GRID: size = { width: 150, height: 60 };
 
-export function throttle(fn: Function, delay: number) {
-  let isCalled = false;
-
-  return function (...args: any) {
-    if (!isCalled) {
-      fn(...args);
-      isCalled = true;
-      setTimeout(function () {
-        isCalled = false;
-      }, delay)
-    }
-  };
-}
-
 type TState = {
   GRID_SIZE_H: number;
   GRID_SIZE_W: number;
@@ -78,22 +64,20 @@ class CanvasElements extends React.Component<TProps, TState> {
   }
 
   drawGrid = () => {
+    // For some reason, the grid lines need to be drawn at an infinitesimally small diagonal
     const GRID_SIZE_H = accurateNum(this.height / GRID.height);
-    const GRID_SIZE_W = accurateNum(this.width / GRID.width);
+    const GRID_SIZE_W = GRID_SIZE_H + 0.00001; // TODO: Remove 5
+
+    console.log('GS', GRID_SIZE_H, GRID_SIZE_W)
 
     this.ctx!.clearRect(0, 0, this.width, this.height);
-    /*
-      TODO:
-      # We're geniuses and figured out that the only way it works is to draw infinitesimally small diagonals
-      # <!–– (GRID_SIZE_H & GRID_SIZE_W) -->
-    */
     for (let i = 0; i < GRID.height; i++) {
       this.ctx!.beginPath();
       this.ctx!.strokeStyle = "white";
       if (i % 10 === 0) this.ctx!.lineWidth = 0.5;
       else this.ctx!.lineWidth = 0.2;
-      this.ctx!.moveTo(0, i * GRID_SIZE_W);
-      this.ctx!.lineTo(this.width, i * GRID_SIZE_H);
+      this.ctx!.moveTo(0, i * GRID_SIZE_H);
+      this.ctx!.lineTo(this.width, i * GRID_SIZE_W);
       this.ctx!.stroke();
     }
     for (let i = 0; i < GRID.width; i++) {
@@ -101,8 +85,8 @@ class CanvasElements extends React.Component<TProps, TState> {
       this.ctx!.strokeStyle = "white";
       if (i % 10 === 0) this.ctx!.lineWidth = 0.5;
       else this.ctx!.lineWidth = 0.2;
-      this.ctx!.moveTo(i * GRID_SIZE_H, 0);
-      this.ctx!.lineTo(i * GRID_SIZE_W, this.height);
+      this.ctx!.moveTo(i * GRID_SIZE_W, 0);
+      this.ctx!.lineTo(i * GRID_SIZE_H, this.height);
       this.ctx!.stroke();
     }
 

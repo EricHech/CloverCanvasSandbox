@@ -1,5 +1,4 @@
 import React from 'react';
-import { throttle, THROTTLE_SPEED } from './CanvasElements';
 
 function isTouchEvent(e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>): e is React.TouchEvent<HTMLDivElement> {
   return e.hasOwnProperty('touches');
