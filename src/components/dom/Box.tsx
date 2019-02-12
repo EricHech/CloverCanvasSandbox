@@ -8,7 +8,8 @@ type TProps = {
   position: {
     x: number,
     y: number,
-  }
+  };
+  pixToGrid: (x: number, y: number) => { x: number, y: number };
 };
 
 const ROTATION_THRESHOLD = 5;
@@ -29,7 +30,7 @@ type Degrees90 = '0deg' | '90deg' | '180deg' | '270deg';
 const rotations: Degrees[] = ['0deg', '45deg', '90deg', '135deg', '180deg', '225deg', '270deg', '315deg'];
 const rotations90: Degrees90[] = ['0deg', '90deg', '180deg', '270deg']; // no multiples of 90
 
-const snapToGrid = (value: number): number => Math.round(value / (CANVAS_WIDTH/ GRID.width)) * (CANVAS_WIDTH/GRID.width);
+const snapToGrid = (value: number): number => Math.round(value / (CANVAS_WIDTH / GRID.width)) * (CANVAS_WIDTH / GRID.width);
 
 const createCSSEditFunc = (el: React.RefObject<HTMLDivElement>) => (attrib: any, value: any, unit: string = 'px') => (el.current!.style[attrib] = value + unit);
 
@@ -157,7 +158,7 @@ const constrainRotate = (canvasRect: ClientRect, width: number, height: number, 
 }
 
 class Box extends React.Component<TProps> {
-  private element: React.RefObject<HTMLDivElement> = React.createRef();
+  private container: React.RefObject<HTMLDivElement> = React.createRef();
   private table: React.RefObject<HTMLDivElement> = React.createRef();
   private tableDetails: React.RefObject<HTMLDivElement> = React.createRef();
   private initialMouseX: number = 0;
@@ -169,7 +170,7 @@ class Box extends React.Component<TProps> {
   private rotationIdx: number = 0;
 
   componentDidMount() {
-    const moveTable = createCSSEditFunc(this.element);
+    const moveTable = createCSSEditFunc(this.container);
 
     moveTable('top', this.props.position.y);
     moveTable('left', this.props.position.x);
@@ -184,13 +185,13 @@ class Box extends React.Component<TProps> {
     e.stopPropagation();
 
     const { clientX, clientY } = e;
-    const containerPos = this.element.current!.getBoundingClientRect() as DOMRect;
+    const containerRect = this.container.current!.getBoundingClientRect() as DOMRect;
 
     // Save the intial mouse position // TODO:
     this.initialMouseX = clientX;
     this.initialMouseY = clientY;
-    this.initialTableX = containerPos.x;
-    this.initialTableY = containerPos.y;
+    this.initialTableX = containerRect.x;
+    this.initialTableY = containerRect.y;
 
     // Bring the selected element to the foreground
     this.props.reorder(this.props.box.name);
@@ -212,6 +213,10 @@ class Box extends React.Component<TProps> {
 
     if (this.shouldRotate) {
       this.rotate();
+    } else {
+      const containerRect = this.container.current!.getBoundingClientRect() as DOMRect;
+      const canvasRect = this.props.floorplan.current!.getBoundingClientRect();
+      this.props.pixToGrid(containerRect.left - canvasRect.left, containerRect.top - canvasRect.top);
     }
   };
 
@@ -236,16 +241,16 @@ class Box extends React.Component<TProps> {
     }
 
     const canvasRect = this.props.floorplan.current!.getBoundingClientRect();
-    const containerRect = this.element.current!.getBoundingClientRect();
+    const containerRect = this.container.current!.getBoundingClientRect();
 
     // Calculate the mouse position change from the first click
     const relativeX = clientX - this.initialMouseX + this.initialTableX - canvasRect.left;
     const relativeY = clientY - this.initialMouseY + this.initialTableY - canvasRect.top;
 
 
-    const moveTable = createCSSEditFunc(this.element);
+    const moveTable = createCSSEditFunc(this.container);
 
-    const { top , left } = constrainDrag(canvasRect, containerRect, relativeX, relativeY);
+    const { top, left } = constrainDrag(canvasRect, containerRect, relativeX, relativeY);
 
     // Reposition the element
     moveTable('top', top);
@@ -267,9 +272,9 @@ class Box extends React.Component<TProps> {
     const { clientX, clientY } = e;
 
     const canvasRect = this.props.floorplan.current!.getBoundingClientRect();
-    const containerRect = this.element.current!.getBoundingClientRect();
+    const containerRect = this.container.current!.getBoundingClientRect();
 
-    const resizeTable = createCSSEditFunc(this.element);
+    const resizeTable = createCSSEditFunc(this.container);
 
     const { height, width } = constrainResize(canvasRect, containerRect, clientX, clientY);
 
@@ -284,10 +289,10 @@ class Box extends React.Component<TProps> {
     this.forceUpdate();
     this.shouldRotate = false;
 
-    const containerRect = this.element.current!.getBoundingClientRect();
+    const containerRect = this.container.current!.getBoundingClientRect();
     const currentRotation = rotations[this.rotationIdx];
 
-    const adjustContainer = createCSSEditFunc(this.element);
+    const adjustContainer = createCSSEditFunc(this.container);
     const adjustTable = createCSSEditFunc(this.table);
     const adjustTableDetails = createCSSEditFunc(this.tableDetails);
 
@@ -337,7 +342,7 @@ class Box extends React.Component<TProps> {
 
     const rotation = rotations[this.rotationIdx];
     return (
-      <div ref={this.element} id={name} onMouseDown={this.mouseDown} className="element" style={{ zIndex: this.dragging ? highestIdx : idx }}>
+      <div ref={this.container} id={name} onMouseDown={this.mouseDown} className="element" style={{ zIndex: this.dragging ? highestIdx : idx }}>
         <div ref={this.table} className="table">
           <div ref={this.tableDetails} className="table-details">
             {name}

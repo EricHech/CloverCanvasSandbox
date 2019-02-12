@@ -149,7 +149,7 @@ class CanvasElements extends React.Component<TProps, TState> {
     const toDisplay = this.state.characters.map((each: any, i: number) => {
       each.idx = i;
       each.color = colors[i];
-      each.x = 10;
+      each.x = 0;
       each.y = 0;
       return each;
     });
