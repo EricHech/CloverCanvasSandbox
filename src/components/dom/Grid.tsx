@@ -17,7 +17,6 @@ class Grid extends React.Component<any> {
     const newX = Math.round(x / this.props.grid.width);
     const newY = Math.round(y / this.props.grid.height);
 
-
     return { x: isNaN(newX) ? 0 : newX, y: isNaN(newY) ? 0 : newY };
   }
 

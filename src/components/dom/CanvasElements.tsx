@@ -154,7 +154,7 @@ class CanvasElements extends React.Component<TProps, TState> {
         <div ref={this.floorplan} className='floorplan'>
           <canvas className="actual-canvas" ref={this.canvas} width={CANVAS_WIDTH} height={CANVAS_HEIGHT} />
           {
-            (this.state.GRID_SIZE_H || this.state.GRID_SIZE_W) &&
+            (this.state.GRID_SIZE_H || this.state.GRID_SIZE_W) && this.floorplan &&
             <Grid
               tables={test}
               floorplan={this.floorplan}

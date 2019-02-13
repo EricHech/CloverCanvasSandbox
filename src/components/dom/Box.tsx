@@ -202,7 +202,13 @@ class Box extends React.Component<TProps> {
     editTable('height', this.props.size.height);
     editTable('width', this.props.size.width);
 
-    this.tableOriginalRotationPos = { x: this.props.position.x, y: this.props.position.y };
+    const canvasRect = this.props.floorplan.current!.getBoundingClientRect() as DOMRect;
+    const containerRect = this.container.current!.getBoundingClientRect() as DOMRect;
+
+    this.tableOriginalRotationPos = this.props.pixToGrid(containerRect.left - canvasRect.left, containerRect.top - canvasRect.top);
+    const { nextLeft, nextTop } = calculateNewCenterPos(canvasRect, containerRect);
+    this.tableNewRotationPos = this.props.pixToGrid(nextLeft, nextTop);
+
     this.tablePosOnGrid = this.props.pixToGrid(this.props.position.x, this.props.position.y);
     const size = this.props.pixToGrid(this.props.size.width, this.props.size.height);
     this.tableSizeOnGrid = { width: size.x, height: size.y };
@@ -283,10 +289,9 @@ class Box extends React.Component<TProps> {
       const canvasRect = this.props.floorplan.current!.getBoundingClientRect() as DOMRect;
       const containerRect = this.container.current!.getBoundingClientRect() as DOMRect;
 
-      this.tableOriginalRotationPos = { x: containerRect.left, y: containerRect.top };
+      this.tableOriginalRotationPos = this.props.pixToGrid(containerRect.left - canvasRect.left, containerRect.top - canvasRect.top);
       const { nextLeft, nextTop } = calculateNewCenterPos(canvasRect, containerRect);
-      this.tableNewRotationPos = { x: nextLeft, y: nextTop };
-      console.log(this.tableOriginalRotationPos, this.tableNewRotationPos);
+      this.tableNewRotationPos = this.props.pixToGrid(nextLeft, nextTop);
     }
   };
 
@@ -398,34 +403,34 @@ class Box extends React.Component<TProps> {
       const nextHeight = containerRect.width;
 
       // TODO: This was for the server, we still need it somewhere, maybe here
-      // const { x: _width, y: _height } = this.props.pixToGrid(nextWidth, nextHeight);
-      // this.tableSizeOnGrid = { width: _width, height: _height };
-
-      // TODO: Constrain the rotate again
-      // const { top, left } = constrainRotate(canvasRect, nextWidth, nextHeight, nextTop, nextLeft);
+      const { x: _width, y: _height } = this.props.pixToGrid(nextWidth, nextHeight);
+      this.tableSizeOnGrid = { width: _width, height: _height };
 
       // const _top = this.props.snapToGridH(top);
       // const _left = this.props.snapToGridW(left);
 
-      // this.tablePosOnGrid = this.props.pixToGrid(_left, _top);
-
       let topTest = 0;
       let leftTest = 0;
-      console.log('containerRect.left', containerRect.left);
-      console.log('this.tableOriginalRotationPos.x', this.tableOriginalRotationPos.x);
-      console.log('this.tableNewRotationPos.x', this.tableNewRotationPos.x);
-      if (containerRect.left === this.tableOriginalRotationPos.x && containerRect.top === this.tableOriginalRotationPos.y) {
-        console.log('running from Original');
-        leftTest = this.tableNewRotationPos.x;
-        topTest = this.tableNewRotationPos.y;
-      } else {
-        console.log('running from New');
-        leftTest = this.tableOriginalRotationPos.x;
-        topTest = this.tableOriginalRotationPos.y;
-      }
-      const _top = this.props.snapToGridH(topTest);
-      const _left = this.props.snapToGridW(leftTest);
 
+      const tableOriginalRotationPosPixels = this.props.gridToPix(this.tableOriginalRotationPos.x, this.tableOriginalRotationPos.y);
+      const tableNewRotationPosPixels = this.props.gridToPix(this.tableNewRotationPos.x, this.tableNewRotationPos.y);
+
+      const containerRectGrid = this.props.pixToGrid(containerRect.left - canvasRect.left, containerRect.top - canvasRect.top);
+      if (containerRectGrid.x === this.tableOriginalRotationPos.x && containerRectGrid.y === this.tableOriginalRotationPos.y) {
+        leftTest = tableNewRotationPosPixels.x;
+        topTest = tableNewRotationPosPixels.y;
+      } else {
+        leftTest = tableOriginalRotationPosPixels.x;
+        topTest = tableOriginalRotationPosPixels.y;
+      }
+
+      // TODO: Constrain the rotate again
+      const { top, left } = constrainRotate(canvasRect, nextWidth, nextHeight, topTest, leftTest);
+
+      const _top = this.props.snapToGridH(top);
+      const _left = this.props.snapToGridW(left);
+
+      this.tablePosOnGrid = this.props.pixToGrid(_left, _top);
       adjustContainer('top', _top);
       adjustContainer('left', _left);
     } else {

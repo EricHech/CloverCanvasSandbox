@@ -7,8 +7,8 @@ const API = 'https://swapi.co/api/people/';
 
 interface IState {
   data: {
-    results: any[]
-  }
+    results: any[];
+  };
 }
 
 class Container extends Component<{}, IState> {
@@ -16,11 +16,18 @@ class Container extends Component<{}, IState> {
     data: {
       results: []
     }
-  }
+  };
 
   componentDidMount() {
     // axios.get(API).then(({ data }) => this.setState({ data })).catch(console.error);
-    this.setState({ data: { results: [{ name: 'Look Skywacker', x: 10, y: 10}, { name: 'Princess Lay-a', x: 10, y: 10}]} } );
+    this.setState({
+      data: {
+        results: [
+          { name: 'Look Skywacker', x: 10, y: 10 }
+          // { name: 'Princess Lay-a', x: 10, y: 10 }
+        ]
+      }
+    });
   }
   render() {
     const { data } = this.state;
