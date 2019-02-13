@@ -70,21 +70,27 @@ class CanvasElements extends React.Component<TProps, TState> {
     this.ctx!.clearRect(0, 0, this.width, this.height);
     for (let i = 0; i < GRID.height; i++) {
       this.ctx!.beginPath();
-      this.ctx!.strokeStyle = "white";
-      if (i % 10 === 0) this.ctx!.lineWidth = 0.5;
-      else this.ctx!.lineWidth = 0.2;
+      if (i % 10 === 0) {
+        this.ctx!.strokeStyle = "rgba(255, 255, 255, 0.3)";
+        this.ctx!.lineWidth = 2.0;
+      } else {
+        this.ctx!.strokeStyle = "rgba(255, 255, 255, 0.2)";
+        this.ctx!.lineWidth = 1.0;
+      }
       this.ctx!.moveTo(0, i * GRID_SIZE_H);
-      // For some reason, the grid lines need to be drawn at an infinitesimally small diagonal
-      this.ctx!.lineTo(this.width, i * GRID_SIZE_H + .01);
+      this.ctx!.lineTo(this.width, i * GRID_SIZE_H);
       this.ctx!.stroke();
     }
     for (let i = 0; i < GRID.width; i++) {
       this.ctx!.beginPath();
-      this.ctx!.strokeStyle = "white";
-      if (i % 10 === 0) this.ctx!.lineWidth = 0.5;
-      else this.ctx!.lineWidth = 0.2;
-      // For some reason, the grid lines need to be drawn at an infinitesimally small diagonal
-      this.ctx!.moveTo(i * GRID_SIZE_W + .01, 0);
+      if (i % 10 === 0) {
+        this.ctx!.strokeStyle = "rgba(255, 255, 255, 0.3)";
+        this.ctx!.lineWidth = 2.0;
+      } else {
+        this.ctx!.strokeStyle = "rgba(255, 255, 255, 0.2)";
+        this.ctx!.lineWidth = 1.0;
+      }
+      this.ctx!.moveTo(i * GRID_SIZE_W, 0);
       this.ctx!.lineTo(i * GRID_SIZE_W, this.height);
       this.ctx!.stroke();
     }
