@@ -176,6 +176,14 @@ class Box extends React.Component<TProps> {
   private shouldRotate: boolean = false;
   private dragging: boolean = false;
   private rotationIdx: number = 0;
+  private tableOriginalRotationPos: {
+    x: number;
+    y: number;
+  } = { x: 0, y: 0 };
+  private tableNewRotationPos: {
+    x: number;
+    y: number;
+  } = { x: 0, y: 0 };
   private tablePosOnGrid: {
     x: number;
     y: number;
@@ -194,6 +202,7 @@ class Box extends React.Component<TProps> {
     editTable('height', this.props.size.height);
     editTable('width', this.props.size.width);
 
+    this.tableOriginalRotationPos = { x: this.props.position.x, y: this.props.position.y };
     this.tablePosOnGrid = this.props.pixToGrid(this.props.position.x, this.props.position.y);
     const size = this.props.pixToGrid(this.props.size.width, this.props.size.height);
     this.tableSizeOnGrid = { width: size.x, height: size.y };
@@ -223,9 +232,9 @@ class Box extends React.Component<TProps> {
         editTable('left', x);
         editTable('width', width);
         editTable('height', height);
-      })
-    }
-  }
+      });
+    };
+  };
 
   setRotate = () => {
     this.shouldRotate = true;
@@ -236,9 +245,15 @@ class Box extends React.Component<TProps> {
     e.stopPropagation();
 
     const { clientX, clientY } = isTouchEvent(e) ? e.touches[0] : (e as any);
+    // const canvasRect = this.props.floorplan.current!.getBoundingClientRect() as DOMRect;
     const containerRect = this.container.current!.getBoundingClientRect() as DOMRect;
 
-    // Save the intial mouse position // TODO:
+    // const { nextLeft, nextTop } = calculateNewCenterPos(canvasRect, containerRect);
+    // this.tableNewRotationPos = { x: nextLeft, y: nextTop };
+
+    // this.tableOriginalRotationPos = { x: containerRect.left, y: containerRect.top };
+
+    // Save the intial mouse position
     this.initialMouseX = clientX;
     this.initialMouseY = clientY;
     this.initialTableX = containerRect.x;
@@ -265,8 +280,13 @@ class Box extends React.Component<TProps> {
     if (this.shouldRotate) {
       this.rotate();
     } else {
+      const canvasRect = this.props.floorplan.current!.getBoundingClientRect() as DOMRect;
       const containerRect = this.container.current!.getBoundingClientRect() as DOMRect;
-      const canvasRect = this.props.floorplan.current!.getBoundingClientRect();
+
+      this.tableOriginalRotationPos = { x: containerRect.left, y: containerRect.top };
+      const { nextLeft, nextTop } = calculateNewCenterPos(canvasRect, containerRect);
+      this.tableNewRotationPos = { x: nextLeft, y: nextTop };
+      console.log(this.tableOriginalRotationPos, this.tableNewRotationPos);
     }
   };
 
@@ -371,25 +391,43 @@ class Box extends React.Component<TProps> {
       adjustContainer('height', containerRect.width);
 
       // Because the rotation is anchored to the top/left, we shift that position to visually maintain the same center point
-      const { nextLeft, nextTop } = calculateNewCenterPos(canvasRect, containerRect);
+      // const { nextLeft, nextTop } = calculateNewCenterPos(canvasRect, containerRect);
 
       // Reposition parent element
       const nextWidth = containerRect.height;
       const nextHeight = containerRect.width;
 
-      const { x: _width, y: _height } = this.props.pixToGrid(nextWidth, nextHeight);
-      this.tableSizeOnGrid = { width: _width, height: _height };
+      // TODO: This was for the server, we still need it somewhere, maybe here
+      // const { x: _width, y: _height } = this.props.pixToGrid(nextWidth, nextHeight);
+      // this.tableSizeOnGrid = { width: _width, height: _height };
 
-      const { top, left } = constrainRotate(canvasRect, nextWidth, nextHeight, nextTop, nextLeft);
+      // TODO: Constrain the rotate again
+      // const { top, left } = constrainRotate(canvasRect, nextWidth, nextHeight, nextTop, nextLeft);
 
-      const _top = this.props.snapToGridH(top);
-      const _left = this.props.snapToGridW(left);
+      // const _top = this.props.snapToGridH(top);
+      // const _left = this.props.snapToGridW(left);
 
-      this.tablePosOnGrid = this.props.pixToGrid(_left, _top);
+      // this.tablePosOnGrid = this.props.pixToGrid(_left, _top);
+
+      let topTest = 0;
+      let leftTest = 0;
+      console.log('containerRect.left', containerRect.left);
+      console.log('this.tableOriginalRotationPos.x', this.tableOriginalRotationPos.x);
+      console.log('this.tableNewRotationPos.x', this.tableNewRotationPos.x);
+      if (containerRect.left === this.tableOriginalRotationPos.x && containerRect.top === this.tableOriginalRotationPos.y) {
+        console.log('running from Original');
+        leftTest = this.tableNewRotationPos.x;
+        topTest = this.tableNewRotationPos.y;
+      } else {
+        console.log('running from New');
+        leftTest = this.tableOriginalRotationPos.x;
+        topTest = this.tableOriginalRotationPos.y;
+      }
+      const _top = this.props.snapToGridH(topTest);
+      const _left = this.props.snapToGridW(leftTest);
 
       adjustContainer('top', _top);
       adjustContainer('left', _left);
-
     } else {
       // If you resize a table from a skyscraper shape to a bridge, the rotations need to invert as well.
       // If the table is diagonal, check the current orientation and rotate it the correct way.
