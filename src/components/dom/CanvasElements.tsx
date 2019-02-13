@@ -64,11 +64,8 @@ class CanvasElements extends React.Component<TProps, TState> {
   }
 
   drawGrid = () => {
-    // For some reason, the grid lines need to be drawn at an infinitesimally small diagonal
     const GRID_SIZE_H = accurateNum(this.height / GRID.height);
-    const GRID_SIZE_W = GRID_SIZE_H + 0.00001; // TODO: Remove 5
-
-    console.log('GS', GRID_SIZE_H, GRID_SIZE_W)
+    const GRID_SIZE_W = accurateNum(this.width / GRID.width);
 
     this.ctx!.clearRect(0, 0, this.width, this.height);
     for (let i = 0; i < GRID.height; i++) {
@@ -77,7 +74,8 @@ class CanvasElements extends React.Component<TProps, TState> {
       if (i % 10 === 0) this.ctx!.lineWidth = 0.5;
       else this.ctx!.lineWidth = 0.2;
       this.ctx!.moveTo(0, i * GRID_SIZE_H);
-      this.ctx!.lineTo(this.width, i * GRID_SIZE_W);
+      // For some reason, the grid lines need to be drawn at an infinitesimally small diagonal
+      this.ctx!.lineTo(this.width, i * GRID_SIZE_H + .01);
       this.ctx!.stroke();
     }
     for (let i = 0; i < GRID.width; i++) {
@@ -85,8 +83,9 @@ class CanvasElements extends React.Component<TProps, TState> {
       this.ctx!.strokeStyle = "white";
       if (i % 10 === 0) this.ctx!.lineWidth = 0.5;
       else this.ctx!.lineWidth = 0.2;
-      this.ctx!.moveTo(i * GRID_SIZE_W, 0);
-      this.ctx!.lineTo(i * GRID_SIZE_H, this.height);
+      // For some reason, the grid lines need to be drawn at an infinitesimally small diagonal
+      this.ctx!.moveTo(i * GRID_SIZE_W + .01, 0);
+      this.ctx!.lineTo(i * GRID_SIZE_W, this.height);
       this.ctx!.stroke();
     }
 
