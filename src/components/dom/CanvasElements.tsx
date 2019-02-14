@@ -103,6 +103,7 @@ class CanvasElements extends React.Component<TProps, TState> {
     const devicePixelRatio = window.devicePixelRatio || 1;
     const context = canvas.getContext('2d')!;
 
+
     // TODO: rename vars
     const rect2 = this.floorplan.current!.getBoundingClientRect();
 
@@ -148,7 +149,7 @@ class CanvasElements extends React.Component<TProps, TState> {
       each.color = colors[i];
       each.x = 12;
       each.y = 0;
-      each.width = 10;
+      each.width = 20;
       each.height = 10;
       return each;
     });

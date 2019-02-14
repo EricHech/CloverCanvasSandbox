@@ -23,8 +23,8 @@ class Container extends Component<{}, IState> {
     this.setState({
       data: {
         results: [
-          { name: 'Look Skywacker', x: 10, y: 10 }
-          // { name: 'Princess Lay-a', x: 10, y: 10 }
+          { name: 'Look Skywacker', x: 10, y: 10 },
+          { name: 'Princess Lay-a', x: 10, y: 10 }
         ]
       }
     });

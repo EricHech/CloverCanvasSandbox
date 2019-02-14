@@ -1,7 +1,12 @@
 import React from 'react';
 
-function isTouchEvent(e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>): e is React.TouchEvent<HTMLDivElement> {
-  return e.hasOwnProperty('touches');
+function isTouchEvent(e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement> | MouseEvent | TouchEvent): e is React.TouchEvent<HTMLDivElement> {
+  return 'touches' in e;
+}
+
+function getClientPos(e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement> | MouseEvent | TouchEvent): { clientX: number, clientY: number } {
+  const { clientX, clientY } = isTouchEvent(e) ? e.touches[0] : (e as any);
+  return { clientX, clientY };
 }
 
 type TProps = {
@@ -250,7 +255,9 @@ class Box extends React.Component<TProps> {
     e.preventDefault();
     e.stopPropagation();
 
-    const { clientX, clientY } = isTouchEvent(e) ? e.touches[0] : (e as any);
+    const { clientX, clientY } = getClientPos(e);
+    // const { clientX, clientY } = isTouchEvent(e) ? e.touches[0] : (e as any);
+
     // const canvasRect = this.props.floorplan.current!.getBoundingClientRect() as DOMRect;
     const containerRect = this.container.current!.getBoundingClientRect() as DOMRect;
 
@@ -281,6 +288,10 @@ class Box extends React.Component<TProps> {
 
     document.onmouseup = null;
     document.onmousemove = null;
+
+    document.ontouchend = null;
+    document.ontouchmove = null;
+    
     this.dragging = false;
 
     if (this.shouldRotate) {
@@ -310,7 +321,10 @@ class Box extends React.Component<TProps> {
     e.preventDefault();
     e.stopPropagation();
 
-    const { clientX, clientY } = e instanceof TouchEvent ? e.touches[0] : e;
+    const { clientX, clientY } = getClientPos(e);
+    // const { clientX, clientY } = isTouchEvent(e) ? e.touches[0] : (e as any);
+    // const { clientX, clientY } = e instanceof TouchEvent ? e.touches[0] : e;
+
 
     // The threshold for the rotation to stop if the table is moved
     // Rotate it if it's just nudged a little
@@ -339,19 +353,22 @@ class Box extends React.Component<TProps> {
     this.tablePosOnGrid = this.props.pixToGrid(newLeft, newTop);
   };
 
-  startResize = (e: React.MouseEvent<HTMLDivElement>) => {
+  startResize = (e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
 
     document.onmousemove = this.continueResize;
     document.onmouseup = this.mouseUp;
+
+    document.ontouchmove = this.continueResize;
+    document.ontouchend = this.mouseUp;
   };
 
-  continueResize = (e: MouseEvent) => {
+  continueResize = (e: MouseEvent | TouchEvent) => {
     e.preventDefault();
     e.stopPropagation();
 
-    const { clientX, clientY } = e;
+    const { clientX, clientY } = getClientPos(e as MouseEvent);
 
     const canvasRect = this.props.floorplan.current!.getBoundingClientRect();
     const containerRect = this.container.current!.getBoundingClientRect();
@@ -464,7 +481,7 @@ class Box extends React.Component<TProps> {
             {rotation}
           </div>
         </div>
-        <div onMouseDown={this.startResize} className="handle" style={{ bottom: '-10px', right: '-10px' }} />
+        <div onMouseDown={this.startResize} onTouchStart={this.startResize} className="handle" style={{ bottom: '-10px', right: '-10px' }} />
       </div>
     );
   }
