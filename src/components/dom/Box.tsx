@@ -475,7 +475,7 @@ class Box extends React.Component<TProps> {
 
     const rotation = rotations[this.rotationIdx];
     return (
-      <div ref={this.container} id={name} /* onMouseDown={this.mouseDown} onTouchStart={this.mouseDown} */ className="element" style={{ zIndex: this.dragging ? highestIdx : idx }}>
+      <div ref={this.container} id={name} className="element" style={{ zIndex: this.dragging ? highestIdx : idx }}>
         <div ref={this.table} className="table">
           <div ref={this.tableDetails} className="table-details">
             {name}
@@ -483,7 +483,7 @@ class Box extends React.Component<TProps> {
             {rotation}
           </div>
         </div>
-        <div ref={this.handle}/* onMouseDown={this.startResize} onTouchStart={this.startResize} */ className="handle" style={{ bottom: '-10px', right: '-10px' }} />
+        <div ref={this.handle} className="handle" style={{ bottom: '-10px', right: '-10px' }} />
       </div>
     );
   }
