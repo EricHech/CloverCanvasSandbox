@@ -1,51 +1,54 @@
+// * Everything is stored in grid positions but calculated in pixels
+
 import React from 'react';
 
-function isTouchEvent(e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement> | MouseEvent | TouchEvent): e is React.TouchEvent<HTMLDivElement> {
+// Type Guard for handling mouse/touch events
+function isTouchEvent(e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement> | MouseEvent | TouchEvent): e is React.TouchEvent<HTMLDivElement> | TouchEvent {
   return 'touches' in e;
 }
 
-function getClientPos(e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement> | MouseEvent | TouchEvent): { clientX: number, clientY: number } {
+// Abstracted getter for clientX/clientY to handle the possiblity of touch vs mouse events
+function getClientMousePos(e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement> | MouseEvent | TouchEvent): { clientX: number; clientY: number } {
   const { clientX, clientY } = isTouchEvent(e) ? e.touches[0] : (e as any);
   return { clientX, clientY };
 }
-
-type TProps = {
-  floorplan: React.RefObject<HTMLDivElement>;
-  box: any; // TODO: properly type
-  highestIdx: number;
-  reorder: (id: string) => void;
-  position: {
-    x: number;
-    y: number;
-  };
-  size: {
-    width: number;
-    height: number;
-  };
-  pixToGrid: (x: number, y: number) => { x: number; y: number };
-  gridToPix: (x: number, y: number) => { x: number; y: number };
-  snapToGridW: (val: number) => number;
-  snapToGridH: (val: number) => number;
-};
-
-const ROTATION_THRESHOLD = 5;
 
 type size = {
   width: number;
   height: number;
 };
 
-// move to config file
+type position = {
+  x: number;
+  y: number;
+};
+
+type TProps = {
+  floorplan: React.RefObject<HTMLDivElement>;
+  box: any; // TODO: properly type
+  highestIdx: number;
+  reorder: (id: string) => void;
+  position: position;
+  size: size;
+  pixToGrid: (x: number, y: number) => position;
+  gridToPix: (x: number, y: number) => position;
+  snapToGridW: (val: number) => number;
+  snapToGridH: (val: number) => number;
+};
+
+// TODO: Dining: move to config file
 const TABLE_MAX_SIZE: size = { width: 20, height: 20 };
 const TABLE_MIN_SIZE: size = { width: 5, height: 5 };
 type Degrees = '0deg' | '45deg' | '90deg' | '135deg' | '180deg' | '225deg' | '270deg' | '315deg';
 type Degrees90 = '0deg' | '90deg' | '180deg' | '270deg';
-
 const rotations: Degrees[] = ['0deg', '45deg', '90deg', '135deg', '180deg', '225deg', '270deg', '315deg'];
 const rotations90: Degrees90[] = ['0deg', '90deg', '180deg', '270deg']; // no multiples of 90
+const ROTATION_THRESHOLD = 0.5; // in grid values
 
-const createCSSEditFunc = (el: React.RefObject<HTMLDivElement>) => (attrib: any, value: any, unit: string = 'px') => (el.current!.style[attrib] = value + unit);
+// A function which returns a function that allows you to modify the CSS of the element passed into the first call
+const createCSSEditFunc = (el: React.RefObject<HTMLDivElement>) => (attrib: any, value: any, unit: string = 'px') => void (el.current!.style[attrib] = value + unit);
 
+// This function calculates the box's new positions so that 90 degree rotation occurs upon the same centerpoint
 const calculateNewCenterPos = (canvasRect: ClientRect, parentPos: ClientRect) => {
   const currLeft = parentPos.left - canvasRect.left;
   const currTop = parentPos.top - canvasRect.top;
@@ -56,6 +59,7 @@ const calculateNewCenterPos = (canvasRect: ClientRect, parentPos: ClientRect) =>
   return { nextLeft, nextTop };
 };
 
+// This function calculates the box's new positions in order to keep it within the bounds of the floorplan
 const constrainDrag = (canvasRect: ClientRect, containerRect: ClientRect, relativeX: number, relativeY: number): { top: number; left: number } => {
   let top = 0;
   let left = 0;
@@ -63,28 +67,33 @@ const constrainDrag = (canvasRect: ClientRect, containerRect: ClientRect, relati
   const relativeWidth = canvasRect.width - containerRect.width;
   const relativeHeight = canvasRect.height - containerRect.height;
 
-  // Table pos, and keep sliding when out of bounds
+  // Drag the box when it is within the proper bounds
   if (relativeX < relativeWidth && relativeY < relativeHeight && relativeX > 0 && relativeY > 0) {
     top = relativeY;
     left = relativeX;
 
-    // Check if the new position won't end up outside the boundaries
+    // If the y axis is out of bounds, only move along the x axis
   } else if (relativeX < relativeWidth && relativeX > 0) {
     left = relativeX;
+    // If the x axis is out of bounds, only move along the y axis
   } else if (relativeY < relativeHeight && relativeY > 0) {
     top = relativeY;
   }
 
-  // Mouse pos, sets table to edge if mouse escapes
+  // If the mouse escapes the floorplan boundary:
+  // - set the table to the edge on the far x axis
   if (relativeX >= relativeWidth) {
     left = relativeWidth;
   }
+  // - set the table to the edge on the far y axis
   if (relativeY >= relativeHeight) {
     top = relativeHeight;
   }
+  // - set the table to the edge on the near x axis
   if (relativeX <= 0) {
     left = 0;
   }
+  // - set the table to the edge on the near y axis
   if (relativeY <= 0) {
     top = 0;
   }
@@ -92,7 +101,8 @@ const constrainDrag = (canvasRect: ClientRect, containerRect: ClientRect, relati
   return { top, left };
 };
 
-const constrainResize = (canvasRect: ClientRect, containerRect: ClientRect, clientX: number, clientY: number, gridToPix: any): { height: number; width: number } => {
+// This function calculates the new width/height of the box in order to keep it within the proper bounds: floorplan border and min/max table size
+const constrainResize = (canvasRect: ClientRect, containerRect: ClientRect, clientX: number, clientY: number, gridToPix: (x: number, y: number) => position): size => {
   let width = 0;
   let height = 0;
 
@@ -104,37 +114,38 @@ const constrainResize = (canvasRect: ClientRect, containerRect: ClientRect, clie
   const containerResizeHeight = clientY - containerRect.top;
   const containerAndCanvasBorderDiffHeight = canvasHeightWithOffset - containerRect.top;
 
+  // Find the max sizes in pixels
   const { x: maxWidth, y: maxHeight } = gridToPix(TABLE_MAX_SIZE.width, TABLE_MAX_SIZE.height);
   const { x: minWidth, y: minHeight } = gridToPix(TABLE_MIN_SIZE.width, TABLE_MIN_SIZE.height);
+
   // Check if the new size would grow past the boundaries of the layout
   if (clientX <= canvasWidthWithOffset) {
-    // Check if the new size would be greater than the max
+    // Check if the new size would be greater than the max table width
     if (containerResizeWidth <= maxWidth) {
-      // Calculate the new width and height based on the difference between the top/left and the position of the mouse at the bottom/right
+      // Decide on the new width
       width = containerResizeWidth;
     } else {
+      // Decide on the new width
       width = maxWidth;
     }
   } else {
-    // Grow until the table either hits the boundaries or its max size
+    // Grow until the table either hits the boundaries...
     if (containerAndCanvasBorderDiffWidth < maxWidth) {
       width = containerAndCanvasBorderDiffWidth;
     } else {
+      // ...or its max size
       width = maxWidth;
     }
   }
 
-  // Check if the new size would grow past the boundaries of the layout
+  // This repeats the functionality above for the height
   if (clientY <= canvasHeightWithOffset) {
-    // Check if the new size would be greater than the max
     if (containerResizeHeight <= maxHeight) {
-      // Calculate the new width and height based on the difference between the top/left and the position of the mouse at the bottom/right
       height = containerResizeHeight;
     } else {
       height = maxHeight;
     }
   } else {
-    // Grow until the table either hits the boundaries or its max size
     if (containerAndCanvasBorderDiffHeight < maxHeight) {
       height = containerAndCanvasBorderDiffHeight;
     } else {
@@ -146,7 +157,6 @@ const constrainResize = (canvasRect: ClientRect, containerRect: ClientRect, clie
   if (containerResizeWidth <= minWidth) {
     width = minWidth;
   }
-
   if (containerResizeHeight <= minHeight) {
     height = minHeight;
   }
@@ -154,6 +164,7 @@ const constrainResize = (canvasRect: ClientRect, containerRect: ClientRect, clie
   return { height, width };
 };
 
+// Rotation can sometimes position part of the box out of bounds, and this function repositions it to remain inside
 const constrainRotate = (canvasRect: ClientRect, width: number, height: number, top: number, left: number): { top: number; left: number } => {
   if (top + height > canvasRect.height) {
     top = canvasRect.height - height;
@@ -182,44 +193,35 @@ class Box extends React.Component<TProps> {
   private shouldRotate: boolean = false;
   private dragging: boolean = false;
   private rotationIdx: number = 0;
-  private tableOriginalRotationPos: {
-    x: number;
-    y: number;
-  } = { x: 0, y: 0 };
-  private tableNewRotationPos: {
-    x: number;
-    y: number;
-  } = { x: 0, y: 0 };
-  private tablePosOnGrid: {
-    x: number;
-    y: number;
-  } = { x: 0, y: 0 };
-  private tableSizeOnGrid: {
-    width: number;
-    height: number;
-  } = { width: 0, height: 0 };
+  private tableOriginalRotationPos: position = { x: 0, y: 0 };
+  private tableNewRotationPos: position = { x: 0, y: 0 };
+  private tablePosOnGrid: position = { x: 0, y: 0 };
+  private tableSizeOnGrid: size = { width: 0, height: 0 };
 
   componentDidMount() {
-    const editTable = createCSSEditFunc(this.container);
-
-    editTable('top', this.props.position.y);
-    editTable('left', this.props.position.x);
-
-    editTable('height', this.props.size.height);
-    editTable('width', this.props.size.width);
+    // Position the table on the floorplan
+    const editContainer = createCSSEditFunc(this.container);
+    editContainer('top', this.props.position.y);
+    editContainer('left', this.props.position.x);
+    editContainer('height', this.props.size.height);
+    editContainer('width', this.props.size.width);
 
     const canvasRect = this.props.floorplan.current!.getBoundingClientRect() as DOMRect;
     const containerRect = this.container.current!.getBoundingClientRect() as DOMRect;
 
-    this.tableOriginalRotationPos = this.props.pixToGrid(containerRect.left - canvasRect.left, containerRect.top - canvasRect.top);
-    const { nextLeft, nextTop } = calculateNewCenterPos(canvasRect, containerRect);
-    this.tableNewRotationPos = this.props.pixToGrid(nextLeft, nextTop);
-
+    // Store the grid values of the current table position and current table size
     this.tablePosOnGrid = this.props.pixToGrid(this.props.position.x, this.props.position.y);
     const size = this.props.pixToGrid(this.props.size.width, this.props.size.height);
     this.tableSizeOnGrid = { width: size.x, height: size.y };
 
+    // Store the grid values of the two 90 degree rotation positions (using `caclulateNewCenterPos`)
+    this.tableOriginalRotationPos = this.props.pixToGrid(containerRect.left - canvasRect.left, containerRect.top - canvasRect.top);
+    const { nextLeft, nextTop } = calculateNewCenterPos(canvasRect, containerRect);
+    this.tableNewRotationPos = this.props.pixToGrid(nextLeft, nextTop);
+
+    // Add all of the initial listeners
     window.addEventListener('resize', this.handleWindowResize());
+
     this.container.current!.addEventListener('mousedown', this.mouseDown);
     this.container.current!.addEventListener('touchstart', this.mouseDown, { passive: false });
 
@@ -231,6 +233,15 @@ class Box extends React.Component<TProps> {
     window.removeEventListener('resize', this.handleWindowResize());
   }
 
+  /*
+  ██╗    ██╗ ██╗ ███╗   ██╗ ██████╗   ██████╗  ██╗    ██╗     ██████╗  ███████╗ ███████╗ ██╗ ███████╗ ███████╗
+  ██║    ██║ ██║ ████╗  ██║ ██╔══██╗ ██╔═══██╗ ██║    ██║     ██╔══██╗ ██╔════╝ ██╔════╝ ██║ ╚══███╔╝ ██╔════╝
+  ██║ █╗ ██║ ██║ ██╔██╗ ██║ ██║  ██║ ██║   ██║ ██║ █╗ ██║     ██████╔╝ █████╗   ███████╗ ██║   ███╔╝  █████╗
+  ██║███╗██║ ██║ ██║╚██╗██║ ██║  ██║ ██║   ██║ ██║███╗██║     ██╔══██╗ ██╔══╝   ╚════██║ ██║  ███╔╝   ██╔══╝
+  ╚███╔███╔╝ ██║ ██║ ╚████║ ██████╔╝ ╚██████╔╝ ╚███╔███╔╝     ██║  ██║ ███████╗ ███████║ ██║ ███████╗ ███████╗
+   ╚══╝╚══╝  ╚═╝ ╚═╝  ╚═══╝ ╚═════╝   ╚═════╝   ╚══╝╚══╝      ╚═╝  ╚═╝ ╚══════╝ ╚══════╝ ╚═╝ ╚══════╝ ╚══════╝
+  */
+  // Adjusts the table position and size to line up with the resizing of the floorplan
   handleWindowResize = () => {
     let timeout: number;
 
@@ -238,40 +249,46 @@ class Box extends React.Component<TProps> {
       if (timeout) cancelAnimationFrame(timeout);
 
       timeout = requestAnimationFrame(() => {
-        const containerRect = this.container.current!.getBoundingClientRect();
-
-        const editTable = createCSSEditFunc(this.container);
+        const editContainer = createCSSEditFunc(this.container);
 
         const { x, y } = this.props.gridToPix(this.tablePosOnGrid.x, this.tablePosOnGrid.y);
         const { x: width, y: height } = this.props.gridToPix(this.tableSizeOnGrid.width, this.tableSizeOnGrid.height);
 
-        editTable('top', y);
-        editTable('left', x);
-        editTable('width', width);
-        editTable('height', height);
+        editContainer('top', y);
+        editContainer('left', x);
+        editContainer('width', width);
+        editContainer('height', height);
       });
     };
   };
 
-  setRotate = () => {
-    this.shouldRotate = true;
-  };
+  /*
+  ███████╗ ███████╗ ████████╗     ██████╗   ██████╗  ████████╗  █████╗  ████████╗ ███████╗
+  ██╔════╝ ██╔════╝ ╚══██╔══╝     ██╔══██╗ ██╔═══██╗ ╚══██╔══╝ ██╔══██╗ ╚══██╔══╝ ██╔════╝
+  ███████╗ █████╗      ██║        ██████╔╝ ██║   ██║    ██║    ███████║    ██║    █████╗
+  ╚════██║ ██╔══╝      ██║        ██╔══██╗ ██║   ██║    ██║    ██╔══██║    ██║    ██╔══╝
+  ███████║ ███████╗    ██║        ██║  ██║ ╚██████╔╝    ██║    ██║  ██║    ██║    ███████╗
+  ╚══════╝ ╚══════╝    ╚═╝        ╚═╝  ╚═╝  ╚═════╝     ╚═╝    ╚═╝  ╚═╝    ╚═╝    ╚══════╝
+  */
+  setRotate = () => void (this.shouldRotate = true);
 
+  /*
+  ███╗   ███╗  ██████╗  ██╗   ██╗ ███████╗ ███████╗     ██████╗   ██████╗  ██╗    ██╗ ███╗   ██╗
+  ████╗ ████║ ██╔═══██╗ ██║   ██║ ██╔════╝ ██╔════╝     ██╔══██╗ ██╔═══██╗ ██║    ██║ ████╗  ██║
+  ██╔████╔██║ ██║   ██║ ██║   ██║ ███████╗ █████╗       ██║  ██║ ██║   ██║ ██║ █╗ ██║ ██╔██╗ ██║
+  ██║╚██╔╝██║ ██║   ██║ ██║   ██║ ╚════██║ ██╔══╝       ██║  ██║ ██║   ██║ ██║███╗██║ ██║╚██╗██║
+  ██║ ╚═╝ ██║ ╚██████╔╝ ╚██████╔╝ ███████║ ███████╗     ██████╔╝ ╚██████╔╝ ╚███╔███╔╝ ██║ ╚████║
+  ╚═╝     ╚═╝  ╚═════╝   ╚═════╝  ╚══════╝ ╚══════╝     ╚═════╝   ╚═════╝   ╚══╝╚══╝  ╚═╝  ╚═══╝
+  */
   mouseDown = (e: MouseEvent | TouchEvent) => {
     e.preventDefault();
     e.stopPropagation();
 
-    const { clientX, clientY } = getClientPos(e);
+    const { clientX, clientY } = getClientMousePos(e);
 
-    // const canvasRect = this.props.floorplan.current!.getBoundingClientRect() as DOMRect;
     const containerRect = this.container.current!.getBoundingClientRect() as DOMRect;
 
-    // const { nextLeft, nextTop } = calculateNewCenterPos(canvasRect, containerRect);
-    // this.tableNewRotationPos = { x: nextLeft, y: nextTop };
-
-    // this.tableOriginalRotationPos = { x: containerRect.left, y: containerRect.top };
-
-    // Save the intial mouse position
+    // Save the intial mouse position (if we drag, the table position is calculated relative to where it was initially)
     this.initialMouseX = clientX;
     this.initialMouseY = clientY;
     this.initialTableX = containerRect.x;
@@ -280,13 +297,19 @@ class Box extends React.Component<TProps> {
     // Bring the selected element to the foreground
     this.props.reorder(this.props.box.name);
 
-    // Initialize dragging
+    // Initialize dragging and rotation (`this.continueDrag` will cancel rotation)
     this.startDrag(clientX, clientY);
-
-    // Initialize rotation
     this.setRotate();
   };
 
+  /*
+  ███╗   ███╗  ██████╗  ██╗   ██╗ ███████╗ ███████╗     ██╗   ██╗ ██████╗
+  ████╗ ████║ ██╔═══██╗ ██║   ██║ ██╔════╝ ██╔════╝     ██║   ██║ ██╔══██╗
+  ██╔████╔██║ ██║   ██║ ██║   ██║ ███████╗ █████╗       ██║   ██║ ██████╔╝
+  ██║╚██╔╝██║ ██║   ██║ ██║   ██║ ╚════██║ ██╔══╝       ██║   ██║ ██╔═══╝
+  ██║ ╚═╝ ██║ ╚██████╔╝ ╚██████╔╝ ███████║ ███████╗     ╚██████╔╝ ██║
+  ╚═╝     ╚═╝  ╚═════╝   ╚═════╝  ╚══════╝ ╚══════╝      ╚═════╝  ╚═╝
+  */
   mouseUp = (e: MouseEvent | TouchEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -301,10 +324,11 @@ class Box extends React.Component<TProps> {
     document.removeEventListener('mousemove', this.continueResize);
 
     this.dragging = false;
-
+    // If `this.continueDrag` never canceled rotation, it should rotate...
     if (this.shouldRotate) {
       this.rotate();
     } else {
+      // ...otherwise, the table moved and new two 90 degree rotation positions need to be stored
       const canvasRect = this.props.floorplan.current!.getBoundingClientRect() as DOMRect;
       const containerRect = this.container.current!.getBoundingClientRect() as DOMRect;
 
@@ -314,8 +338,16 @@ class Box extends React.Component<TProps> {
     }
   };
 
+  /*
+  ███████╗ ████████╗  █████╗  ██████╗  ████████╗     ██████╗  ██████╗   █████╗   ██████╗
+  ██╔════╝ ╚══██╔══╝ ██╔══██╗ ██╔══██╗ ╚══██╔══╝     ██╔══██╗ ██╔══██╗ ██╔══██╗ ██╔════╝
+  ███████╗    ██║    ███████║ ██████╔╝    ██║        ██║  ██║ ██████╔╝ ███████║ ██║  ███╗
+  ╚════██║    ██║    ██╔══██║ ██╔══██╗    ██║        ██║  ██║ ██╔══██╗ ██╔══██║ ██║   ██║
+  ███████║    ██║    ██║  ██║ ██║  ██║    ██║        ██████╔╝ ██║  ██║ ██║  ██║ ╚██████╔╝
+  ╚══════╝    ╚═╝    ╚═╝  ╚═╝ ╚═╝  ╚═╝    ╚═╝        ╚═════╝  ╚═╝  ╚═╝ ╚═╝  ╚═╝  ╚═════╝
+  */
   startDrag = (clientX: number, clientY: number) => {
-    // Set the listener on the document as well so that the object is never lost
+    // Set the listener on the document as well so that the object is never lost by rapid mouse movement
     document.addEventListener('mousemove', this.continueDrag);
     document.addEventListener('mouseup', this.mouseUp);
 
@@ -325,39 +357,57 @@ class Box extends React.Component<TProps> {
     this.dragging = true;
   };
 
+  /*
+   ██████╗  ██████╗  ███╗   ██╗ ████████╗ ██╗ ███╗   ██╗ ██╗   ██╗ ███████╗     ██████╗  ██████╗   █████╗   ██████╗
+  ██╔════╝ ██╔═══██╗ ████╗  ██║ ╚══██╔══╝ ██║ ████╗  ██║ ██║   ██║ ██╔════╝     ██╔══██╗ ██╔══██╗ ██╔══██╗ ██╔════╝
+  ██║      ██║   ██║ ██╔██╗ ██║    ██║    ██║ ██╔██╗ ██║ ██║   ██║ █████╗       ██║  ██║ ██████╔╝ ███████║ ██║  ███╗
+  ██║      ██║   ██║ ██║╚██╗██║    ██║    ██║ ██║╚██╗██║ ██║   ██║ ██╔══╝       ██║  ██║ ██╔══██╗ ██╔══██║ ██║   ██║
+  ╚██████╗ ╚██████╔╝ ██║ ╚████║    ██║    ██║ ██║ ╚████║ ╚██████╔╝ ███████╗     ██████╔╝ ██║  ██║ ██║  ██║ ╚██████╔╝
+   ╚═════╝  ╚═════╝  ╚═╝  ╚═══╝    ╚═╝    ╚═╝ ╚═╝  ╚═══╝  ╚═════╝  ╚══════╝     ╚═════╝  ╚═╝  ╚═╝ ╚═╝  ╚═╝  ╚═════╝
+  */
   continueDrag = (e: MouseEvent | TouchEvent) => {
     e.preventDefault();
     e.stopPropagation();
 
-    const { clientX, clientY } = getClientPos(e);
+    const { clientX, clientY } = getClientMousePos(e);
+
+    const { x: thresholdInPixels } = this.props.gridToPix(ROTATION_THRESHOLD, ROTATION_THRESHOLD);
 
     // The threshold for the rotation to stop if the table is moved
     // Rotate it if it's just nudged a little
-    if (Math.abs(this.initialMouseX - clientX) > ROTATION_THRESHOLD || Math.abs(this.initialMouseY - clientY) > ROTATION_THRESHOLD) {
+    if (Math.abs(this.initialMouseX - clientX) > thresholdInPixels || Math.abs(this.initialMouseY - clientY) > thresholdInPixels) {
       this.shouldRotate = false;
     }
 
     const canvasRect = this.props.floorplan.current!.getBoundingClientRect();
     const containerRect = this.container.current!.getBoundingClientRect();
 
-    // Calculate the mouse position change from the first click
+    // Calculate the mouse position relative to where it was on the intial mousedown/touchstart
     const relativeX = clientX - this.initialMouseX + this.initialTableX - canvasRect.left;
     const relativeY = clientY - this.initialMouseY + this.initialTableY - canvasRect.top;
 
-    const moveTable = createCSSEditFunc(this.container);
-
+    // Find the proper position for the element within bounds and snapped to the grid
     const { top, left } = constrainDrag(canvasRect, containerRect, relativeX, relativeY);
-
-    // Reposition the element
     const newTop = this.props.snapToGridH(top);
     const newLeft = this.props.snapToGridW(left);
 
-    moveTable('top', newTop);
-    moveTable('left', newLeft);
+    // Reposition the element
+    const moveContainer = createCSSEditFunc(this.container);
+    moveContainer('top', newTop);
+    moveContainer('left', newLeft);
 
+    // Update the saved grid position
     this.tablePosOnGrid = this.props.pixToGrid(newLeft, newTop);
   };
 
+  /*
+  ███████╗ ████████╗  █████╗  ██████╗ ████████╗    ██████╗ ███████╗███████╗██╗███████╗███████╗
+  ██╔════╝ ╚══██╔══╝ ██╔══██╗ ██╔══██╗╚══██╔══╝    ██╔══██╗██╔════╝██╔════╝██║╚══███╔╝██╔════╝
+  ███████╗    ██║    ███████║ ██████╔╝   ██║       ██████╔╝█████╗  ███████╗██║  ███╔╝ █████╗
+  ╚════██║    ██║    ██╔══██║ ██╔══██╗   ██║       ██╔══██╗██╔══╝  ╚════██║██║ ███╔╝  ██╔══╝
+  ███████║    ██║    ██║  ██║ ██║  ██║   ██║       ██║  ██║███████╗███████║██║███████╗███████╗
+  ╚══════╝    ╚═╝    ╚═╝  ╚═╝ ╚═╝  ╚═╝   ╚═╝       ╚═╝  ╚═╝╚══════╝╚══════╝╚═╝╚══════╝╚══════╝
+  */
   startResize = (e: MouseEvent | TouchEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -369,94 +419,109 @@ class Box extends React.Component<TProps> {
     document.addEventListener('touchend', this.mouseUp, { passive: false });
   };
 
+  /*
+   ██████╗  ██████╗  ███╗   ██╗ ████████╗ ██╗ ███╗   ██╗ ██╗   ██╗ ███████╗    ██████╗  ███████╗ ███████╗ ██╗ ███████╗ ███████╗
+  ██╔════╝ ██╔═══██╗ ████╗  ██║ ╚══██╔══╝ ██║ ████╗  ██║ ██║   ██║ ██╔════╝    ██╔══██╗ ██╔════╝ ██╔════╝ ██║ ╚══███╔╝ ██╔════╝
+  ██║      ██║   ██║ ██╔██╗ ██║    ██║    ██║ ██╔██╗ ██║ ██║   ██║ █████╗      ██████╔╝ █████╗   ███████╗ ██║   ███╔╝  █████╗
+  ██║      ██║   ██║ ██║╚██╗██║    ██║    ██║ ██║╚██╗██║ ██║   ██║ ██╔══╝      ██╔══██╗ ██╔══╝   ╚════██║ ██║  ███╔╝   ██╔══╝
+  ╚██████╗ ╚██████╔╝ ██║ ╚████║    ██║    ██║ ██║ ╚████║ ╚██████╔╝ ███████╗    ██║  ██║ ███████╗ ███████║ ██║ ███████╗ ███████╗
+   ╚═════╝  ╚═════╝  ╚═╝  ╚═══╝    ╚═╝    ╚═╝ ╚═╝  ╚═══╝  ╚═════╝  ╚══════╝    ╚═╝  ╚═╝ ╚══════╝ ╚══════╝ ╚═╝ ╚══════╝ ╚══════╝
+   */
   continueResize = (e: MouseEvent | TouchEvent) => {
     e.preventDefault();
     e.stopPropagation();
 
-    const { clientX, clientY } = getClientPos(e as MouseEvent);
+    const { clientX, clientY } = getClientMousePos(e as MouseEvent);
 
     const canvasRect = this.props.floorplan.current!.getBoundingClientRect();
     const containerRect = this.container.current!.getBoundingClientRect();
 
-    const resizeTable = createCSSEditFunc(this.container);
-
+    // Find the proper size for the element within bounds and snapped to the grid
     const { height, width } = constrainResize(canvasRect, containerRect, clientX, clientY, this.props.gridToPix);
-
     const newWidth = this.props.snapToGridW(width);
     const newHeight = this.props.snapToGridH(height);
 
-    resizeTable('height', newHeight);
-    resizeTable('width', newWidth);
+    // Resize the element
+    const resizeContainer = createCSSEditFunc(this.container);
+    resizeContainer('height', newHeight);
+    resizeContainer('width', newWidth);
 
+    // Update the saved grid size
     const { x: _width, y: _height } = this.props.pixToGrid(newWidth, newHeight);
     this.tableSizeOnGrid = { width: _width, height: _height };
   };
 
-  // TODO: Check if any helper functions can be used instead
+  /*
+  ██████╗   ██████╗  ████████╗  █████╗  ████████╗ ███████╗
+  ██╔══██╗ ██╔═══██╗ ╚══██╔══╝ ██╔══██╗ ╚══██╔══╝ ██╔════╝
+  ██████╔╝ ██║   ██║    ██║    ███████║    ██║    █████╗
+  ██╔══██╗ ██║   ██║    ██║    ██╔══██║    ██║    ██╔══╝
+  ██║  ██║ ╚██████╔╝    ██║    ██║  ██║    ██║    ███████╗
+  ╚═╝  ╚═╝  ╚═════╝     ╚═╝    ╚═╝  ╚═╝    ╚═╝    ╚══════╝
+  */
   rotate = () => {
     // Circularly iterate through the list of rotation degrees
     this.rotationIdx = (this.rotationIdx + 1) % rotations.length;
-    this.forceUpdate();
+    // If we want the `rotations[this.rotationIdx]` in render to be updated, we have to call `this.forceUpdate()` because the values are not in state:
+    // this.forceUpdate();
     this.shouldRotate = false;
 
-    const containerRect = this.container.current!.getBoundingClientRect();
     const currentRotation = rotations[this.rotationIdx];
 
     const adjustContainer = createCSSEditFunc(this.container);
     const adjustTable = createCSSEditFunc(this.table);
     const adjustTableDetails = createCSSEditFunc(this.tableDetails);
 
+    // If the rotation is setting the table to a 90 degree angle
     if (rotations90.includes(currentRotation as Degrees90)) {
+      const canvasRect = this.props.floorplan.current!.getBoundingClientRect();
+      const containerRect = this.container.current!.getBoundingClientRect();
+
       // Reset the css transforms because 90 degree rotations are handled by swapping the width and height
       adjustTable('transform', 'rotate(0deg)', '');
       adjustTableDetails('transform', 'rotate(0deg)', '');
 
-      const canvasRect = this.props.floorplan.current!.getBoundingClientRect();
-
       // Reverse the width and height
-      adjustContainer('width', containerRect.height);
-      adjustContainer('height', containerRect.width);
-
-      // Because the rotation is anchored to the top/left, we shift that position to visually maintain the same center point
-      // const { nextLeft, nextTop } = calculateNewCenterPos(canvasRect, containerRect);
-
-      // Reposition parent element
       const nextWidth = containerRect.height;
       const nextHeight = containerRect.width;
 
-      // TODO: This was for the server, we still need it somewhere, maybe here
-      const { x: _width, y: _height } = this.props.pixToGrid(nextWidth, nextHeight);
-      this.tableSizeOnGrid = { width: _width, height: _height };
+      // Reposition parent element
+      adjustContainer('width', nextWidth);
+      adjustContainer('height', nextHeight);
 
-      let topTest = 0;
-      let leftTest = 0;
+      // Save the grid size of the swapped width and height
+      this.tableSizeOnGrid = { width: this.tableSizeOnGrid.height, height: this.tableSizeOnGrid.width };
 
+      let nextTop = 0;
+      let nextLeft = 0;
+
+      // Get rotation values in pixels for positioning
       const tableOriginalRotationPosPixels = this.props.gridToPix(this.tableOriginalRotationPos.x, this.tableOriginalRotationPos.y);
       const tableNewRotationPosPixels = this.props.gridToPix(this.tableNewRotationPos.x, this.tableNewRotationPos.y);
 
+      // Check which state the table is in, horizontal or vertical, and then swap it in the if/else
       const containerRectGrid = this.props.pixToGrid(containerRect.left - canvasRect.left, containerRect.top - canvasRect.top);
       if (containerRectGrid.x === this.tableOriginalRotationPos.x && containerRectGrid.y === this.tableOriginalRotationPos.y) {
-        leftTest = tableNewRotationPosPixels.x;
-        topTest = tableNewRotationPosPixels.y;
+        nextLeft = tableNewRotationPosPixels.x;
+        nextTop = tableNewRotationPosPixels.y;
       } else {
-        leftTest = tableOriginalRotationPosPixels.x;
-        topTest = tableOriginalRotationPosPixels.y;
+        nextLeft = tableOriginalRotationPosPixels.x;
+        nextTop = tableOriginalRotationPosPixels.y;
       }
 
-      // TODO: Constrain the rotate again
-      const { top, left } = constrainRotate(canvasRect, nextWidth, nextHeight, topTest, leftTest);
+      // Protect against being out of bounds
+      const { top, left } = constrainRotate(canvasRect, nextWidth, nextHeight, nextTop, nextLeft);
 
+      // Snap the resulting position to the grid
       const _top = this.props.snapToGridH(top);
       const _left = this.props.snapToGridW(left);
 
+      // Save and set the new position
       this.tablePosOnGrid = this.props.pixToGrid(_left, _top);
       adjustContainer('top', _top);
       adjustContainer('left', _left);
     } else {
-      // If you resize a table from a skyscraper shape to a bridge, the rotations need to invert as well.
-      // If the table is diagonal, check the current orientation and rotate it the correct way.
-
-      // Determine the correct rotation
+      // If the table is diagonal, check the current orientation and rotate it the correct way
       let clockwise = false;
       if (currentRotation === '45deg' || currentRotation === '225deg') {
         clockwise = true;
@@ -472,15 +537,11 @@ class Box extends React.Component<TProps> {
   render() {
     const { name, idx } = this.props.box;
     const { highestIdx } = this.props;
-
-    const rotation = rotations[this.rotationIdx];
     return (
       <div ref={this.container} id={name} className="element" style={{ zIndex: this.dragging ? highestIdx : idx }}>
         <div ref={this.table} className="table">
           <div ref={this.tableDetails} className="table-details">
             {name}
-            <br />
-            {rotation}
           </div>
         </div>
         <div ref={this.handle} className="handle" style={{ bottom: '-10px', right: '-10px' }} />
