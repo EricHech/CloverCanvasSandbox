@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 
 import Canvas from './canvas/Canvas';
-import CanvasElements from './dom/CanvasElements';
+// import CanvasElements from './dom/CanvasElements';
 
 const API = 'https://swapi.co/api/people/';
 
@@ -34,16 +34,16 @@ class Container extends Component<{}, IState> {
     if (!data.results.length) return null;
 
     // ! For CanvasElements Component Only:
-    const characters = this.state.data.results.map((each: any, i: number) => {
-      each.x = 20 * (i + 1);
-      each.y = 20 * (i + 1);
-      return each;
-    });
+    // const characters = this.state.data.results.map((each: any, i: number) => {
+    //   each.x = 20 * (i + 1);
+    //   each.y = 20 * (i + 1);
+    //   return each;
+    // });
 
     return (
       <>
-        {/* <Canvas characters={data.results} /> */}
-        <CanvasElements characters={characters} />
+        <Canvas characters={data.results} />
+        {/* <CanvasElements characters={characters} /> */}
       </>
     );
   }

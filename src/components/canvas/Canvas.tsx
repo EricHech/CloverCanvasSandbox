@@ -1,10 +1,10 @@
-import React from 'react';
+import React, { createRef } from 'react';
 
-const colors = ['red', 'orange', 'yellow', 'green', 'blue', 'indigo', 'violet', 'lightgrey', 'black', 'lightgreen'];
+const colors = ['darkslategrey', 'bisque', 'red', 'orange', 'yellow', 'green', 'blue', 'indigo', 'violet', 'lightgrey', 'black'];
 const TABLE_BORDER_WIDTH = 4;
 const HANDLE_SIZE = 10;
-const CANVAS_WIDTH = 700;
-const CANVAS_HEIGHT = 500;
+const CANVAS_WIDTH = 500;
+const CANVAS_HEIGHT = 300;
 
 const mousePos = (canvas: HTMLCanvasElement, e: MouseEvent) => {
   const dpr = window.devicePixelRatio || 1;
@@ -79,7 +79,6 @@ class Box {
     this.ctx = ctx;
 
     this.name = '';
-
   }
 
   public set changeColor(color: string) {
@@ -91,6 +90,7 @@ class Box {
   }
 
   public set y(y: number) {
+    console.log(y);
     this.pos.y = y;
   }
 
@@ -116,7 +116,8 @@ class Box {
     this.ctx.fillStyle = color;
     this.ctx.fillRect(pos.x, pos.y, size.width, size.height);
 
-    this.ctx.fillStyle = colors[Math.round(Math.random() * 10)];
+    // this.ctx.fillStyle = colors[Math.round(Math.random() * 10)];
+    this.ctx.fillStyle = 'black';
     this.ctx.textAlign = "center";
     this.ctx.fillText(this.name, pos.x + (size.width / 2), pos.y + (size.height / 2));
 
@@ -154,7 +155,7 @@ class Box {
 
 // TODO: Type props/state
 class Canvas extends React.Component<any, {}> {
-  private canvas: HTMLCanvasElement | null;
+  private canvas: React.RefObject<HTMLCanvasElement>;
   private ctx: CanvasRenderingContext2D | null;
   private canvasState: CanvasState;
 
@@ -162,49 +163,34 @@ class Canvas extends React.Component<any, {}> {
   constructor(props: any) {
     super(props);
 
-    this.canvas = null;
+    this.canvas = createRef<HTMLCanvasElement>();
     this.ctx = null;
     this.canvasState = new CanvasState(700, 500);
   }
 
-  setupCanvas(canvas: HTMLCanvasElement): CanvasRenderingContext2D {
-    const dpr = window.devicePixelRatio || 1;
-
-    const rect = canvas.getBoundingClientRect();
-
-    canvas.width = Math.round(dpr * rect.right) - Math.round(dpr * rect.left);
-    canvas.height = Math.round(dpr * rect.bottom) - Math.round(dpr * rect.top);
-    const ctx = canvas.getContext('2d')!;
-
-    ctx.scale(dpr, dpr);
-    return ctx;
-  }
-
   componentDidMount() {
-    this.canvas = this.refs.canvas as HTMLCanvasElement;
-    this.ctx = this.setupCanvas(this.canvas);
+    this.ctx = this.setupCanvas(this.canvas.current!);
     this.canvasState.addContext(this.ctx);
     this.ctx.font = "10px Comic Sans MS";
 
+    this.canvas.current!.style.position = 'relative';
+    this.canvas.current!.style.border = '2px solid white';
+    this.canvas.current!.style.borderRadius = '5px';
 
-
-    const elements = [];
     // TODO: Type this:
     this.props.characters.forEach((each: any, i: number) => {
-      const element = this.canvasState.addTable(new Box(this.ctx!));
-      element.x = each.height * 1.5;
-      element.y = each.height * 1.5;
+      const box = new Box(this.ctx!);
+      const element = this.canvasState.addTable(box);
       element.changeColor = colors[i];
       element.name = each.name;
-      elements.push(element);
     })
 
     this.canvasState.render();
 
 
-    this.canvas.onmousedown = (e) => {
-      const mousePosX = mousePos(this.canvas!, e).x;
-      const mousePosY = mousePos(this.canvas!, e).y;
+    this.canvas.current!.onmousedown = (e) => {
+      const mousePosX = mousePos(this.canvas.current!, e).x;
+      const mousePosY = mousePos(this.canvas.current!, e).y;
 
       // We have to loop backwards due to draw order, topmost things are last
       for (let i = this.canvasState.tables.length - 1; i >= 0; i--) {
@@ -245,22 +231,35 @@ class Canvas extends React.Component<any, {}> {
       }
     };
 
-    this.canvas!.onmouseup = (e) => {
+    this.canvas.current!.onmouseup = _e => {
       this.removeMoveListener();
       this.canvasState.dragging = null;
       this.canvasState.resizing = null;
     };
   }
 
-  addMoveListener = () => {
-    this.canvas!.onmousemove = (e) => {
+  setupCanvas(canvas: HTMLCanvasElement): CanvasRenderingContext2D {
+    const dpr = window.devicePixelRatio || 1;
 
-      const posX = mousePos(this.canvas!, e).x;
-      const posY = mousePos(this.canvas!, e).y;
+    const rect = canvas.getBoundingClientRect();
+
+    canvas.width = Math.round(dpr * rect.right) - Math.round(dpr * rect.left);
+    canvas.height = Math.round(dpr * rect.bottom) - Math.round(dpr * rect.top);
+    const ctx = canvas.getContext('2d')!;
+
+    ctx.scale(dpr, dpr);
+    return ctx;
+  }
+
+  addMoveListener = () => {
+    this.canvas.current!.onmousemove = (e) => {
+
+      const posX = mousePos(this.canvas.current!, e).x;
+      const posY = mousePos(this.canvas.current!, e).y;
 
       if (this.canvasState.dragging) {
-        this.canvasState.dragging!.x = posX - this.canvasState.mouseRelativePosX;
-        this.canvasState.dragging!.y = posY - this.canvasState.mouseRelativePosY;
+        this.canvasState.dragging.x = posX - this.canvasState.mouseRelativePosX;
+        this.canvasState.dragging.y = posY - this.canvasState.mouseRelativePosY;
       } else if (this.canvasState.resizing) {
         this.canvasState.resizing.width = posX - this.canvasState.resizing.pos.x;
         this.canvasState.resizing.height = posY - this.canvasState.resizing.pos.y;
@@ -268,13 +267,13 @@ class Canvas extends React.Component<any, {}> {
     };
   };
 
-  removeMoveListener = () => (this.canvas!.onmousemove = null);
+  removeMoveListener = () => (this.canvas.current!.onmousemove = null);
 
   render() {
     return (
       <div className="App-body">
-        Here is some text.
-        <canvas ref="canvas" width={CANVAS_WIDTH} height={CANVAS_HEIGHT} />
+        <div style={{ width: 200, height: '100%', background: 'grey', color: 'black' }}>Here is the sidebar</div>
+        <canvas ref={this.canvas} width={CANVAS_WIDTH} height={CANVAS_HEIGHT} />
       </div>
     );
   }
